@@ -1,6 +1,5 @@
 import java.time.Duration;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class FS_Tracker {
@@ -77,6 +76,64 @@ public class FS_Tracker {
             long secondsDifference = duration.getSeconds();
 
             if(secondsDifference>3) deleteDisconnectedNode(entry.getKey());
+        }
+    }
+
+    public void messageParser(String mensagem){
+        String messageReceived = mensagem;
+        String ipNode = "";
+        String payloadLength = "";
+        String payload = "";
+        Integer aux = 0;
+
+
+        for(int i = 0; i < messageReceived.length(); i++) {
+            if (messageReceived.charAt(i)=='|'){
+                aux += 1;
+            }
+            else if (aux == 0){
+                ipNode += messageReceived.charAt(i);
+            }
+            else if (aux == 1){
+                payloadLength += messageReceived.charAt(i);
+            }
+            else if(aux == 2 && Integer.parseInt(payloadLength) > 0){
+                payload += messageReceived.charAt(i);
+            }
+        }
+
+        Boolean flag = true;
+        String currentFile = "";
+        Integer currentBlock = 0;
+
+        for(int i = 0; i < payload.length(); i++){
+
+            // Situação de troca de file
+            if (payload.charAt(i)==';'){
+                currentFile = "";
+                flag = true;
+            }
+
+            // Situação de file
+            else if (flag = true){
+                currentFile += payload.charAt(i);
+                if (payload.charAt(i+1) == ':'){
+                    flag = false;
+                }
+            }
+
+            // Situação de bloco
+            else {
+                currentBlock += payload.charAt(i) - '0';
+                if (Character.isDigit(payload.charAt(i+1))){
+                    currentBlock *= 10;
+                }
+                else{
+                    insertInfo(currentFile,currentBlock,ipNode);
+                    System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
+                }
+            }
+
         }
     }
 

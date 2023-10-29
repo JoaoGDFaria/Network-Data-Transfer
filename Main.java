@@ -1,4 +1,3 @@
-import java.time.LocalTime;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,5 +23,19 @@ public class Main {
         timer.scheduleAtFixedRate(task, 0, 3000);
 
         System.out.println(fs.toString());
+
+
+
+        /*List<String> myList = new ArrayList<>();
+        myList.add("1:2,3,4");
+        myList.add("5:3,4,5");
+        myList.add("2:2");
+
+        Node nd = new Node("AA",myList);
+        nd.convertToString();*/
+
+        //fs.messageParser("MEUIP|2|file1:2,3,4;file3:5,4,2;");
+
+
     }
 }
