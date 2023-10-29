@@ -108,14 +108,18 @@ public class FS_Tracker {
 
         for(int i = 0; i < payload.length(); i++){
 
+
+            if (payload.charAt(i)==',');
+            else if (payload.charAt(i)==':');
+
             // Situação de troca de file
-            if (payload.charAt(i)==';'){
+            else if (payload.charAt(i)==';'){
                 currentFile = "";
                 flag = true;
             }
 
             // Situação de file
-            else if (flag = true){
+            else if (flag){
                 currentFile += payload.charAt(i);
                 if (payload.charAt(i+1) == ':'){
                     flag = false;
@@ -124,13 +128,14 @@ public class FS_Tracker {
 
             // Situação de bloco
             else {
-                currentBlock += payload.charAt(i) - '0';
+                currentBlock +=  payload.charAt(i) - '0';
                 if (Character.isDigit(payload.charAt(i+1))){
                     currentBlock *= 10;
                 }
                 else{
                     insertInfo(currentFile,currentBlock,ipNode);
                     System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
+                    currentBlock = 0;
                 }
             }
 
