@@ -8,11 +8,68 @@ public class Main {
     public static void main(String[] args){
 
         FS_Tracker fs = new FS_Tracker();
-        fs.insertInfo("A",1,"A");
-        fs.insertInfo("A",1,"B");
-        fs.insertInfo("S",1,"A");
-        fs.insertInfo("S",1,"B");
-        fs.insertInfo("D",1,"E");
+        // File A
+        fs.insertInfo("A", 1, "192.168.1.1");
+        fs.insertInfo("A", 2, "192.168.1.6");
+        fs.insertInfo("A", 3, "192.168.1.3");
+        fs.insertInfo("A", 4, "192.168.1.4");
+        fs.insertInfo("A", 1, "192.168.1.4");
+        fs.insertInfo("A", 2, "192.168.1.1");
+        fs.insertInfo("A", 4, "192.168.1.6");
+        fs.insertInfo("A", 3, "192.168.1.2");
+        fs.insertInfo("A", 1, "192.168.1.4");
+
+        // File B
+        fs.insertInfo("B", 1, "192.168.1.5");
+        fs.insertInfo("B", 2, "192.168.1.3");
+        fs.insertInfo("B", 3, "192.168.1.7");
+        fs.insertInfo("B", 1, "192.168.1.1");
+        fs.insertInfo("B", 2, "192.168.1.2");
+        fs.insertInfo("B", 3, "192.168.1.4");
+        fs.insertInfo("B", 1, "192.168.1.6");
+        fs.insertInfo("B", 2, "192.168.1.1");
+        fs.insertInfo("B", 3, "192.168.1.2");
+
+        // File C
+        fs.insertInfo("C", 1, "192.168.1.1");
+        fs.insertInfo("C", 2, "192.168.1.2");
+        fs.insertInfo("C", 3, "192.168.1.3");
+        fs.insertInfo("C", 4, "192.168.1.1");
+        fs.insertInfo("C", 5, "192.168.1.2");
+        fs.insertInfo("C", 6, "192.168.1.3");
+        fs.insertInfo("C", 7, "192.168.1.4");
+        fs.insertInfo("C", 1, "192.168.1.3");
+        fs.insertInfo("C", 2, "192.168.1.4");
+        fs.insertInfo("C", 3, "192.168.1.7");
+        fs.insertInfo("C", 4, "192.168.1.2");
+        fs.insertInfo("C", 5, "192.168.1.4");
+        fs.insertInfo("C", 6, "192.168.1.5");
+        fs.insertInfo("C", 7, "192.168.1.1");
+
+        // File D
+        fs.insertInfo("D", 1, "192.168.1.6");
+        fs.insertInfo("D", 2, "192.168.1.6");
+        fs.insertInfo("D", 1, "192.168.1.1");
+        fs.insertInfo("D", 2, "192.168.1.2");
+        fs.insertInfo("D", 1, "192.168.1.3");
+        fs.insertInfo("D", 2, "192.168.1.4");
+
+        // File E
+        fs.insertInfo("E", 1, "192.168.1.7");
+        fs.insertInfo("E", 1, "192.168.1.1");
+        fs.insertInfo("E", 1, "192.168.1.3");
+
+        // File F
+        fs.insertInfo("F", 1, "192.168.1.2");
+        fs.insertInfo("F", 2, "192.168.1.1");
+        fs.insertInfo("F", 3, "192.168.1.2");
+        fs.insertInfo("F", 4, "192.168.1.6");
+        fs.insertInfo("F", 5, "192.168.1.3");
+        fs.insertInfo("F", 1, "192.168.1.4");
+        fs.insertInfo("F", 2, "192.168.1.6");
+        fs.insertInfo("F", 3, "192.168.1.1");
+        fs.insertInfo("F", 4, "192.168.1.3");
+        fs.insertInfo("F", 5, "192.168.1.4");
 
 
 
@@ -27,8 +84,8 @@ public class Main {
 
         timer.scheduleAtFixedRate(task, 0, 3000);
 
-        //System.out.println(fs.memoryToString());
-        //System.out.println(fs.timeToString());
+        System.out.println(fs.memoryToString());
+        System.out.println(fs.timeToString());
 
 
 

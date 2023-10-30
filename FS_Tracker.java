@@ -67,10 +67,6 @@ public class FS_Tracker {
 
     public void verifyTimeStamp(){
         LocalTime now = LocalTime.now();
-        System.out.println("*\n"+LocalTime.now()+"\n*\n");
-        System.out.println(memoryToString());
-        System.out.println("========");
-        System.out.println(timeToString());
         Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
 
         while (iterator.hasNext()) {
