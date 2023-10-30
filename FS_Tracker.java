@@ -14,9 +14,7 @@ public class FS_Tracker {
 
     public int insertInfo(String fileName, Integer blockNumber, String ipNode){
 
-        LocalTime now = LocalTime.now();
-
-        insertTimeStamps(now, ipNode);
+        insertTimeStamps(LocalTime.now(), ipNode);
 
         if (!fileMemory.containsKey(fileName)) fileMemory.put(fileName, new HashMap<>());
         Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
@@ -70,7 +68,7 @@ public class FS_Tracker {
     public void verifyTimeStamp(){
         LocalTime now = LocalTime.now();
 
-        for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
+        for(Map.Entry<String, LocalTime> entry : this.timeStamps.entrySet()){
             LocalTime before = entry.getValue();
             Duration duration = Duration.between(before, now);
             long secondsDifference = duration.getSeconds();
@@ -134,7 +132,7 @@ public class FS_Tracker {
                 }
                 else{
                     insertInfo(currentFile,currentBlock,ipNode);
-                    System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
+                    //System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
                     currentBlock = 0;
                 }
             }
