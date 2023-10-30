@@ -67,13 +67,22 @@ public class FS_Tracker {
 
     public void verifyTimeStamp(){
         LocalTime now = LocalTime.now();
+        System.out.println("*\n"+LocalTime.now()+"\n*\n");
+        System.out.println(memoryToString());
+        System.out.println("========");
+        System.out.println(timeToString());
+        Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
 
-        for(Map.Entry<String, LocalTime> entry : this.timeStamps.entrySet()){
+        while (iterator.hasNext()) {
+            Map.Entry<String, LocalTime> entry = iterator.next();
             LocalTime before = entry.getValue();
             Duration duration = Duration.between(before, now);
             long secondsDifference = duration.getSeconds();
 
-            if(secondsDifference>3) deleteDisconnectedNode(entry.getKey());
+            if (secondsDifference >= 3) {
+                iterator.remove();
+                deleteDisconnectedNode(entry.getKey());
+            }
         }
     }
 
@@ -141,7 +150,7 @@ public class FS_Tracker {
     }
 
 
-    public String toString() {
+    public String memoryToString() {
 
         StringBuilder result = new StringBuilder();
 
@@ -159,6 +168,21 @@ public class FS_Tracker {
             }
         }
 
+        return result.toString();
+    }
+
+    public String timeToString(){
+
+        StringBuilder result = new StringBuilder();
+
+        for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
+            String ipName = entry.getKey();
+            String time = entry.getValue().toString();
+
+            result.append("IP: ").append(ipName)
+                    .append(", Time: ").append(time).append("\n");
+        }
+        if(result.length() == 0) return "VAZIO";
         return result.toString();
     }
 }

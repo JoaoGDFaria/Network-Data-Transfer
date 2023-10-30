@@ -27,7 +27,8 @@ public class Main {
 
         timer.scheduleAtFixedRate(task, 0, 3000);
 
-        System.out.println(fs.toString());
+        //System.out.println(fs.memoryToString());
+        //System.out.println(fs.timeToString());
 
 
 
@@ -36,10 +37,12 @@ public class Main {
         myList.add("5:3,4,5");
         myList.add("2:2");
 
-        Node nd = new Node("AA",myList);
+        /*Node nd = new Node("AA",myList);
         nd.convertToString();
 
         fs.messageParser("MEUIP|2|file1:223,3,44;file3:5,4,2;");
+
+        */
 
 
     }
