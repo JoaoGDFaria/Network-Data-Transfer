@@ -145,6 +145,19 @@ public class FS_Tracker {
         }
     }
 
+    public void pickFile(String fileName){
+        Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
+        for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
+            String entrada = entry.getValue().get(0);
+            sendIPBack(fileName, entry.getKey());
+            //System.out.println(entrada + " tem o bloco " + entry.getKey());
+            //
+            // FALTA FAZER FUNÇÃO DE TRANSFERÊNCIA
+            // DO BLOCO DE NODE PARA NODE
+            //
+        }
+    }
+
 
     public String memoryToString() {
 

@@ -87,12 +87,18 @@ public class Main {
         System.out.println(fs.memoryToString());
         System.out.println(fs.timeToString());
 
+        System.out.println("//////////////");
+        fs.pickFile("F");
+        System.out.println("//////////////");
+        System.out.println(fs.memoryToString());
 
 
-        List<String> myList = new ArrayList<>();
-        myList.add("1:2,3,4");
-        myList.add("5:3,4,5");
-        myList.add("2:2");
+        //List<String> myList = new ArrayList<>();
+        //myList.add("1:2,3,4");
+        // myList.add("5:3,4,5");
+        //myList.add("2:2");
+
+
 
         /*Node nd = new Node("AA",myList);
         nd.convertToString();
