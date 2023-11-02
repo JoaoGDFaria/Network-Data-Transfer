@@ -1,14 +1,61 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
 
 public class Node {
-    private String ip;
+    private String ipNode;
     private List<String> files;
     private Integer size_char;
 
+    private Socket socket;
+    private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
+    private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
 
-    public Node(String ip, List<String> files){
-        this.ip = ip;
-        this.files = files;
+
+    public Node(String ip, Socket socket) throws IOException{
+        this.ipNode = ip;
+        //this.files = files;
+        this.socket = socket;
+        this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
+        this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
+    }
+
+
+
+    public void sendMessageToTracker() throws IOException {
+
+        Scanner scanner = new Scanner(System.in);
+        while(socket.isConnected()) {
+            String messageToSend = scanner.nextLine();
+            bufferedToTracker.write(messageToSend);
+            bufferedToTracker.newLine();
+            bufferedToTracker.flush();
+        }
+    }
+
+
+    public void listenMessage() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String msgFromChat;
+
+                while (socket.isConnected()) {
+                    try {
+                        msgFromChat = bufferedFromTracker.readLine();
+                        System.out.println(msgFromChat);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    
+                }
+            }
+        }).start();
     }
 
 
@@ -23,20 +70,26 @@ public class Node {
         return message;
     }
 
-    private void sendToFS_Tracker(){
+    private String sendToFS_Tracker(){
         String message = convertToString();
 
-        String payload = this.ip + "|" + this.size_char.toString()+ "|" + message;
+        String payload = this.ipNode + "|" + this.size_char.toString()+ "|" + message;
 
+        return payload;
     }
 
 
 
 
 
+    public static void main (String[] args) throws IOException{
 
-
-
-
+        Scanner scanner = new Scanner(System.in);
+        String info = scanner.nextLine();
+        Socket socket = new Socket("localhost",1234);
+        Node node = new Node("IP",socket);
+        node.listenMessage();
+        node.sendMessageToTracker();
+    }
 
 }

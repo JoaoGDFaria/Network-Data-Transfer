@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
@@ -5,14 +8,30 @@ import java.util.*;
 public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
     private Map<String, LocalTime> timeStamps;
+    private ServerSocket trackerSocket;
 
-    public FS_Tracker(){
+    public FS_Tracker(ServerSocket trackerSocket){
+        this.trackerSocket = trackerSocket;
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
     }
 
 
-    public int insertInfo(String fileName, Integer blockNumber, String ipNode){
+    private void startFS_Tracker() throws IOException {
+        checkAlive();
+        while (!trackerSocket.isClosed()) {
+               
+            Socket socket = trackerSocket.accept();
+            System.out.println("NEW CLIENT");
+            NodeHandler nodeHandler = new NodeHandler(socket, this);
+
+            Thread newThread = new Thread(nodeHandler);
+            newThread.start();
+        }
+    }
+
+
+    public void insertInfo(String fileName, Integer blockNumber, String ipNode){
 
         insertTimeStamps(LocalTime.now(), ipNode);
 
@@ -25,8 +44,6 @@ public class FS_Tracker {
         ipList.add(ipNode);
         blockMap.put(blockNumber, ipList);
         fileMemory.put(fileName, blockMap);
-
-        return 1;
 
     }
 
@@ -79,6 +96,21 @@ public class FS_Tracker {
         }
     }
 
+    public String ipAdressNode(String mensagem){
+        String ipNode = "";
+        for(int i = 0; i < mensagem.length(); i++) {
+            if (mensagem.charAt(i)=='|'){
+                break;
+            }
+            else{
+                ipNode += mensagem.charAt(i);
+            }
+        }
+        return ipNode;
+    }
+
+
+    // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
         String messageReceived = mensagem;
         String ipNode = "";
@@ -140,6 +172,8 @@ public class FS_Tracker {
             }
 
         }
+
+
     }
 
     public void pickFile(String fileName){
@@ -190,5 +224,26 @@ public class FS_Tracker {
         }
         if(result.length() == 0) return "VAZIO";
         return result.toString();
+    }
+
+
+    public void checkAlive(){
+        Timer timer = new Timer();
+
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                verifyTimeStamp();
+            }
+        };
+
+        timer.scheduleAtFixedRate(task, 0, 3000);
+    }
+
+    public static void main (String[] args) throws IOException{
+
+        ServerSocket trackerSocket = new ServerSocket(1234);
+        FS_Tracker fs = new FS_Tracker(trackerSocket);
+        fs.startFS_Tracker();
     }
 }
