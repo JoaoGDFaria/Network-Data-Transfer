@@ -117,7 +117,7 @@ public class FS_Tracker {
         String payloadLength = "";
         String payload = "";
         Integer aux = 0;
-
+        System.out.println(messageReceived);
 
         for(int i = 0; i < messageReceived.length(); i++) {
             if (messageReceived.charAt(i)=='|'){
@@ -166,7 +166,7 @@ public class FS_Tracker {
                 }
                 else{
                     insertInfo(currentFile,currentBlock,ipNode);
-                    //System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
+                    System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
                     currentBlock = 0;
                 }
             }

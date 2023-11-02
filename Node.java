@@ -17,12 +17,16 @@ public class Node {
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
 
 
-    public Node(String ip, Socket socket) throws IOException{
+    public Node(String ip, Socket socket, String info) throws IOException{
         this.ipNode = ip;
         //this.files = files;
         this.socket = socket;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
+
+        bufferedToTracker.write("MEUIP|2|file1:223,3,44;file3:5,4,2;");
+        bufferedToTracker.newLine();
+        bufferedToTracker.flush();
     }
 
 
@@ -83,11 +87,8 @@ public class Node {
 
 
     public static void main (String[] args) throws IOException{
-
-        Scanner scanner = new Scanner(System.in);
-        String info = scanner.nextLine();
         Socket socket = new Socket("localhost",1234);
-        Node node = new Node("IP",socket);
+        Node node = new Node("IP",socket, "MEUIP|2|file1:223,3,44;file3:5,4,2;");
         node.listenMessage();
         node.sendMessageToTracker();
     }

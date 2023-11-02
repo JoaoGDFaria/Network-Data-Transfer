@@ -20,7 +20,7 @@ public class NodeHandler implements Runnable {
         this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
         this.fs = fs;
         String messageReceived = bufferedFromNode.readLine();
-        System.out.println(messageReceived +"----");
+        System.out.println(messageReceived + "\n");
         this.ipAdress = this.fs.ipAdressNode(messageReceived);
         this.fs.messageParser(messageReceived);
         
@@ -32,8 +32,9 @@ public class NodeHandler implements Runnable {
     public void run() {
         while (socket.isConnected()) {
             try{
-                System.out.println(bufferedFromNode.readLine());
-                //this.fs.messageParser(bufferedFromNode.readLine());
+                String aux = bufferedFromNode.readLine();
+                System.out.println(aux);
+                this.fs.messageParser(aux);
 
 
                 bufferedToNode.write("SENT TO NODE"); //sendtofstracker
