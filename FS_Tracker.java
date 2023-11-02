@@ -188,7 +188,7 @@ public class FS_Tracker {
             result.append("IP: ").append(ipName)
                     .append(", Time: ").append(time).append("\n");
         }
-        if(result.isEmpty()) return "VAZIO";
+        if(result.length() == 0) return "VAZIO";
         return result.toString();
     }
 }
