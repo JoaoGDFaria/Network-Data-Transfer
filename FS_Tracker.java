@@ -50,13 +50,10 @@ public class FS_Tracker {
     }
 
     public void deleteDisconnectedNode(String ipDisc){
-        int cont = 0;
         for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
-            String fileName = entry.getKey();
             Map<Integer, List<String>> blockMap = entry.getValue();
 
             for (Map.Entry<Integer, List<String>> blockEntry : blockMap.entrySet()){
-                Integer blockNumber = blockEntry.getKey();
                 List<String> ipList = blockEntry.getValue();
                 ipList.remove(ipDisc);
             }
@@ -149,12 +146,12 @@ public class FS_Tracker {
         Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
         for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
             String entrada = entry.getValue().get(0);
-            sendIPBack(fileName, entry.getKey());
             //System.out.println(entrada + " tem o bloco " + entry.getKey());
             //
             // FALTA FAZER FUNÇÃO DE TRANSFERÊNCIA
             // DO BLOCO DE NODE PARA NODE
             //
+            sendIPBack(fileName, entry.getKey());
         }
     }
 
@@ -191,7 +188,7 @@ public class FS_Tracker {
             result.append("IP: ").append(ipName)
                     .append(", Time: ").append(time).append("\n");
         }
-        if(result.length() == 0) return "VAZIO";
+        if(result.isEmpty()) return "VAZIO";
         return result.toString();
     }
 }
