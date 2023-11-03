@@ -23,7 +23,6 @@ public class NodeHandler implements Runnable {
         System.out.println(messageReceived + "\n");
         this.ipAdress = this.fs.ipAdressNode(messageReceived);
         this.fs.messageParser(messageReceived);
-        
     }
 
 
@@ -33,13 +32,28 @@ public class NodeHandler implements Runnable {
         while (socket.isConnected()) {
             try{
                 String aux = bufferedFromNode.readLine();
-                System.out.println(aux);
-                this.fs.messageParser(aux);
 
-
-                bufferedToNode.write("SENT TO NODE"); //sendtofstracker
-                bufferedToNode.newLine();
-                bufferedToNode.flush();
+                // Disconect node from FSTracker
+                if (aux.charAt(0) == 'd'){
+                    System.out.println("Node " + this.ipAdress + " has been disconnected");
+                    this.fs.deleteDisconnectedNode(this.ipAdress);
+                    try{
+                        bufferedFromNode.close();
+                        bufferedToNode.close();
+                        socket.close();  
+                    } catch (IOException a){
+                    System.out.println("ERROR CLOSING NODE");
+                    }
+                }
+                else{
+                    this.fs.messageParser(aux);
+                    bufferedToNode.write("SENT TO NODE"); //sendtofstracker
+                    bufferedToNode.newLine();
+                    bufferedToNode.flush();
+                    System.out.println(aux); 
+                }
+                
+                
 
             } catch (IOException e){
                 this.fs.deleteDisconnectedNode(ipAdress);

@@ -117,7 +117,6 @@ public class FS_Tracker {
         String payloadLength = "";
         String payload = "";
         Integer aux = 0;
-        System.out.println(messageReceived);
 
         for(int i = 0; i < messageReceived.length(); i++) {
             if (messageReceived.charAt(i)=='|'){
@@ -237,7 +236,7 @@ public class FS_Tracker {
             }
         };
 
-        timer.scheduleAtFixedRate(task, 0, 3000);
+        timer.scheduleAtFixedRate(task, 3000, 3000);
     }
 
     public static void main (String[] args) throws IOException{
