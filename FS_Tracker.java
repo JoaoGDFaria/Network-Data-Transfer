@@ -23,8 +23,9 @@ public class FS_Tracker {
         while (!trackerSocket.isClosed()) {
                
             Socket socket = trackerSocket.accept();
-            System.out.println("NEW CLIENT");
             NodeHandler nodeHandler = new NodeHandler(socket, this);
+
+            
 
             Thread newThread = new Thread(nodeHandler);
             newThread.start();
@@ -35,6 +36,9 @@ public class FS_Tracker {
     public void insertInfo(String fileName, Integer blockNumber, String ipNode){
 
         insertTimeStamps(LocalTime.now(), ipNode);
+        if (fileName.equals("null")){
+            return;
+        }
 
         if (!fileMemory.containsKey(fileName)) fileMemory.put(fileName, new HashMap<>());
         Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
@@ -45,7 +49,6 @@ public class FS_Tracker {
         ipList.add(ipNode);
         blockMap.put(blockNumber, ipList);
         fileMemory.put(fileName, blockMap);
-
     }
 
     public void insertTimeStamps(LocalTime time, String ipNode){
@@ -113,27 +116,29 @@ public class FS_Tracker {
 
     // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
-        String messageReceived = mensagem;
         String ipNode = "";
         String payloadLength = "";
         String payload = "";
         Integer aux = 0;
 
-        for(int i = 0; i < messageReceived.length(); i++) {
-            if (messageReceived.charAt(i)=='|'){
+        for(int i = 0; i < mensagem.length(); i++) {
+            if (mensagem.charAt(i)=='|'){
                 aux += 1;
             }
             else if (aux == 0){
-                ipNode += messageReceived.charAt(i);
+                ipNode += mensagem.charAt(i);
             }
             else if (aux == 1){
-                payloadLength += messageReceived.charAt(i);
+                payloadLength += mensagem.charAt(i);
             }
             else if(aux == 2 && Integer.parseInt(payloadLength) > 0){
-                payload += messageReceived.charAt(i);
+                payload += mensagem.charAt(i);
             }
         }
-
+        if (payloadLength.equals("0")){
+            insertInfo("null", 0, ipNode);
+            return;
+        } 
         Boolean flag = true;
         String currentFile = "";
         Integer currentBlock = 0;
@@ -166,7 +171,7 @@ public class FS_Tracker {
                 }
                 else{
                     insertInfo(currentFile,currentBlock,ipNode);
-                    System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
+                    // System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
                     currentBlock = 0;
                 }
             }
@@ -190,7 +195,7 @@ public class FS_Tracker {
     }
 
 
-    public String memoryToString() {
+    public void memoryToString() {
 
         StringBuilder result = new StringBuilder();
 
@@ -207,11 +212,11 @@ public class FS_Tracker {
                         .append(", IPs: ").append(ipList).append("\n");
             }
         }
-
-        return result.toString();
+        if(result.length() == 0) System.out.println("VAZIO");
+        else System.out.println(result.toString());
     }
 
-    public String timeToString(){
+    public void timeToString(){
 
         StringBuilder result = new StringBuilder();
 
@@ -222,8 +227,9 @@ public class FS_Tracker {
             result.append("IP: ").append(ipName)
                     .append(", Time: ").append(time).append("\n");
         }
-        if(result.length() == 0) return "VAZIO";
-        return result.toString();
+        if(result.length() == 0) System.out.println("VAZIO");
+        else System.out.println(result.toString());
+        
     }
 
 
@@ -242,7 +248,7 @@ public class FS_Tracker {
 
     public static void main (String[] args) throws IOException{
 
-        ServerSocket trackerSocket = new ServerSocket(1234);
+        ServerSocket trackerSocket = new ServerSocket(9090);
         FS_Tracker fs = new FS_Tracker(trackerSocket);
         fs.startFS_Tracker();
     }

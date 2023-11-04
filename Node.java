@@ -136,8 +136,8 @@ public class Node {
 
 
     public static void main (String[] args) throws IOException{
-        Socket socket = new Socket("localhost",1234); //"10.0.0.10"
-        Node node = new Node("192.168.1.6",socket, "192.168.1.6|2|file1:223,3,44;file3:5,4,2;");
+        Socket socket = new Socket("localhost",9090); //"10.0.0.10"
+        Node node = new Node("192.168.1.61",socket, "192.168.1.61|2|file1:223,3,44;file3:5,4,2;");
         node.listenMessage();
         node.sendMessageToTracker();
     }
