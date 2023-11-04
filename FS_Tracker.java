@@ -18,6 +18,7 @@ public class FS_Tracker {
 
 
     private void startFS_Tracker() throws IOException {
+        System.out.println("Server running...");
         checkAlive();
         while (!trackerSocket.isClosed()) {
                

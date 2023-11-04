@@ -18,6 +18,7 @@ public class Node {
 
 
     public Node(String ip, Socket socket, String info) throws IOException{
+        System.out.println("Node " + ip + " running...");
         this.ipNode = ip;
         //this.files = files;
         this.socket = socket;
@@ -39,9 +40,12 @@ public class Node {
             @Override
             public void run() {
                 try {
-                    bufferedToTracker.write(ipNode + "|0");
-                    bufferedToTracker.newLine();
-                    bufferedToTracker.flush();
+                    if (!killNode){
+                        bufferedToTracker.write(ipNode + "|0");
+                        bufferedToTracker.newLine();
+                        bufferedToTracker.flush();  
+                    }
+                    
                 } catch (IOException e) {
                     System.out.println("ERROR WRITING FROM NODE");
                 }
@@ -71,10 +75,6 @@ public class Node {
 
     public void disconnectNode(){
         killNode=true;
-        if (timer != null) {
-            timer.cancel();
-            timer.purge();
-        }
         try{
             if (bufferedToTracker != null) {
                 bufferedToTracker.close();
@@ -88,6 +88,10 @@ public class Node {
                     
         } catch (IOException a){
             System.out.println("ERROR CLOSING NODE");
+        }
+        if (timer != null) {
+            timer.cancel();
+            timer.purge();
         }
         System.out.println("Disconnected Sucessfully");
     }
@@ -103,7 +107,6 @@ public class Node {
                         msgFromChat = bufferedFromTracker.readLine();
                         System.out.println(msgFromChat);
                     } catch (IOException e) {
-                        System.out.println("ERROR WRITING FROM NODE");
                     }
                 }
             }
@@ -132,10 +135,8 @@ public class Node {
 
 
 
-
-
     public static void main (String[] args) throws IOException{
-        Socket socket = new Socket("localhost",1234);
+        Socket socket = new Socket("localhost",1234); //"10.0.0.10"
         Node node = new Node("192.168.1.6",socket, "192.168.1.6|2|file1:223,3,44;file3:5,4,2;");
         node.listenMessage();
         node.sendMessageToTracker();
