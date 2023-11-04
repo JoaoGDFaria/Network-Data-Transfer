@@ -31,7 +31,17 @@ public class NodeHandler implements Runnable {
     public void run() {
         while (socket.isConnected()) {
             try{
-                String aux = bufferedFromNode.readLine();
+                String aux;
+                if ((aux = bufferedFromNode.readLine())==null){
+                    try{
+                        bufferedFromNode.close();
+                        bufferedToNode.close();
+                        socket.close();  
+                    } catch (IOException a){
+                    System.out.println("ERROR CLOSING NODE");
+                    }
+                    return;
+                } 
 
                 // Disconect node from FSTracker
                 if (aux.charAt(0) == 'd'){
@@ -58,8 +68,8 @@ public class NodeHandler implements Runnable {
                         System.out.println("GET");
                     }
                     else{
-                        this.fs.messageParser(aux);
-                        //System.out.println(aux);
+                        //this.fs.messageParser(aux);
+                        System.out.println(aux);
                         //bufferedToNode.write("SENT TO NODE"); //sendtofstracker
                         //bufferedToNode.newLine();
                         //bufferedToNode.flush();

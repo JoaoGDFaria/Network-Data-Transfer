@@ -25,10 +25,41 @@ public class Node {
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
 
-        bufferedToTracker.write(info);
-        bufferedToTracker.newLine();
-        bufferedToTracker.flush();
+        sendInfoToFS_Tracker("2:3,4,5;5:2,4,2324;");
         keepAlive();
+    }
+
+    public void sendInfoToFS_Tracker(String payload) throws IOException{
+        int maxPayload = 2;
+        int payloadSize = payload.length();
+        
+        if (payloadSize<=maxPayload) {
+            String finalMessage = this.ipNode + "|" + payloadSize + "|" + 0 + "|" + payload;
+            bufferedToTracker.write(finalMessage);
+            bufferedToTracker.newLine();
+            bufferedToTracker.flush();
+        }
+        else{
+            int totalFragments = (int)Math.ceil((double)payloadSize/maxPayload);
+
+            for (int i = 1; i <= totalFragments; i++){
+                int start = (i * maxPayload) - maxPayload;
+                int end = i * maxPayload;
+                if (end > payloadSize) {
+                    end = payloadSize;
+                }
+                String message = this.ipNode + "|" + (end-start) + "|" + i + "/" + totalFragments + "|" + payload.substring(start, end);
+                bufferedToTracker.write(message);
+                bufferedToTracker.newLine();
+                bufferedToTracker.flush();
+            }
+            
+        }
+
+
+        
+
+
     }
 
 
@@ -125,19 +156,10 @@ public class Node {
         return message;
     }
 
-    private String sendToFS_Tracker(){
-        String message = convertToString();
-
-        String payload = this.ipNode + "|" + this.size_char.toString()+ "|" + message;
-
-        return payload;
-    }
-
-
 
     public static void main (String[] args) throws IOException{
         Socket socket = new Socket("localhost",9090); //"10.0.0.10"
-        Node node = new Node("192.168.1.61",socket, "192.168.1.61|2|file1:223,3,44;file3:5,4,2;");
+        Node node = new Node("192.168.1.61",socket, "192.168.1.61|30|0|file1:223,3,44;file3:5,4,2;");
         node.listenMessage();
         node.sendMessageToTracker();
     }

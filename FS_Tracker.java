@@ -119,6 +119,7 @@ public class FS_Tracker {
         String ipNode = "";
         String payloadLength = "";
         String payload = "";
+        String fragmentNumber = "";
         Integer aux = 0;
 
         for(int i = 0; i < mensagem.length(); i++) {
@@ -131,7 +132,10 @@ public class FS_Tracker {
             else if (aux == 1){
                 payloadLength += mensagem.charAt(i);
             }
-            else if(aux == 2 && Integer.parseInt(payloadLength) > 0){
+            else if (aux == 2){
+                fragmentNumber += mensagem.charAt(i);
+            }
+            else if(aux == 3 && Integer.parseInt(payloadLength) > 0){
                 payload += mensagem.charAt(i);
             }
         }
