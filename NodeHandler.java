@@ -22,7 +22,7 @@ public class NodeHandler implements Runnable {
         String messageReceived = bufferedFromNode.readLine();
         System.out.println(messageReceived);
         this.ipAdress = this.fs.ipAdressNode(messageReceived);
-        //this.fs.messageParser(messageReceived);
+        this.fs.messageParser(messageReceived);
     }
 
 
@@ -64,11 +64,11 @@ public class NodeHandler implements Runnable {
                         System.out.println("##############");
                         System.out.println("##############\n");
                     }
-                    //else if (aux.length() >= 5 && aux.substring(0, 4).equals("GET ")){
-                    //    System.out.println("GET");
-                    //}
+                    else if (aux.length() >= 5 && aux.substring(0, 4).equals("GET ")){
+                        System.out.println("GET");
+                    }
                     else{
-                        //this.fs.messageParser(aux);
+                        this.fs.messageParser(aux);
                         System.out.println(aux);
                         //bufferedToNode.write("SENT TO NODE"); //sendtofstracker
                         //bufferedToNode.newLine();

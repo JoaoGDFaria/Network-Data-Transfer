@@ -8,6 +8,7 @@ import java.util.*;
 
 public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
+    private Map<String, Map<Integer, String>> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
     private ServerSocket trackerSocket;
 
@@ -15,6 +16,7 @@ public class FS_Tracker {
         this.trackerSocket = trackerSocket;
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
+        this.defragmentMessages = new HashMap<>();
     }
 
 
@@ -25,7 +27,6 @@ public class FS_Tracker {
                
             Socket socket = trackerSocket.accept();
             NodeHandler nodeHandler = new NodeHandler(socket, this);
-
             
 
             Thread newThread = new Thread(nodeHandler);
@@ -114,7 +115,6 @@ public class FS_Tracker {
         return ipNode;
     }
 
-
     // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
         String ipNode = "";
@@ -144,6 +144,12 @@ public class FS_Tracker {
             insertInfo("null", 0, ipNode);
             return;
         } 
+        if (!fragmentNumber.equals("0")){
+            //System.out.print(ipNode+"!!!!"+payload+"!!!!"+fragmentNumber);
+            //defragmentation(ipNode, payload, fragmentNumber);
+            return;
+        }
+
         Boolean flag = true;
         String currentFile = "";
         Integer currentBlock = 0;
@@ -182,8 +188,39 @@ public class FS_Tracker {
             }
 
         }
+    }
 
 
+    public void defragmentation(String ipNode, String payload, String fragInfo){
+        String fragment = "";
+        String fragmentMax = "";
+        int aux = 0;
+        for(int i=0; i<fragInfo.length();i++){
+            if (fragInfo.charAt(i) == '/') aux ++;
+            else if (aux == 0){
+                fragment += fragInfo.charAt(i);
+            }
+            else{
+                fragmentMax += fragInfo.charAt(i);
+            }
+        }
+
+        if (!defragmentMessages.containsKey(ipNode)) defragmentMessages.put(ipNode, new HashMap<>());
+        Map<Integer,String> blocksIP = defragmentMessages.get(ipNode);
+
+        if (!blocksIP.containsKey(Integer.parseInt(fragment))) blocksIP.put(Integer.parseInt(fragment), payload);
+
+        defragmentMessages.put(ipNode, blocksIP);
+
+        String totalMessage = "";
+        Map<Integer,String> all_info = defragmentMessages.get(ipNode);
+        if (all_info.size() == Integer.parseInt(fragmentMax)){
+
+            for (int i=0; i<Integer.parseInt(fragmentMax); i++){
+                totalMessage += all_info.get(i);
+            }
+        }
+        messageParser(totalMessage);
     }
 
     public void pickFile(String fileName){
