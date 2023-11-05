@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
@@ -17,8 +18,8 @@ public class FS_Tracker {
     }
 
 
-    private void startFS_Tracker() throws IOException {
-        System.out.println("Server running...");
+    private void startFS_Tracker(ServerSocket trackerSocket) throws IOException {
+        System.out.println("Servidor ativo em 10.0.0.10 porta " + trackerSocket.getLocalPort() + ".\n");
         checkAlive();
         while (!trackerSocket.isClosed()) {
                
@@ -254,6 +255,6 @@ public class FS_Tracker {
 
         ServerSocket trackerSocket = new ServerSocket(9090);
         FS_Tracker fs = new FS_Tracker(trackerSocket);
-        fs.startFS_Tracker();
+        fs.startFS_Tracker(trackerSocket);
     }
 }
