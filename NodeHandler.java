@@ -64,21 +64,18 @@ public class NodeHandler implements Runnable {
                         System.out.println("##############");
                         System.out.println("##############\n");
                     }
-                    else if (aux.length() >= 5 && aux.substring(0, 4).equals("GET ")){
-                        System.out.println("GET");
+                    else if (aux.length() >= 5 && aux.startsWith("GET ")){
+                        String messageToNode = this.fs.pickFile(aux.substring(4));
+                        this.fs.sendInfoToNode(messageToNode,bufferedToNode);
                     }
                     else{
                         this.fs.messageParser(aux);
                         System.out.println(aux);
-                        //bufferedToNode.write("SENT TO NODE"); //sendtofstracker
-                        //bufferedToNode.newLine();
-                        //bufferedToNode.flush();
                     }
                     //System.out.println(aux); 
                 }
                 
-                
-
+            
             } catch (IOException e){
                 this.fs.deleteDisconnectedNode(ipAdress);
                 try{

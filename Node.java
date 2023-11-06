@@ -12,7 +12,7 @@ public class Node {
     private List<String> files;
     private boolean killNode = false;
     private String pathToFiles;
-
+    private List<String> defragmentMessages;
     private Socket socket;
     private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
@@ -20,6 +20,7 @@ public class Node {
 
     public Node(String ip, Socket socket, String info, String pathToFiles) throws IOException{
         this.ipNode = ip;
+        this.defragmentMessages = new ArrayList<>();
         this.pathToFiles = pathToFiles;
         this.socket = socket;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
@@ -63,11 +64,13 @@ public class Node {
                 }
         }
         payload += ";";
+        System.out.println(payload);
         return payload;
     }
 
+    // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
-        int maxPayload = 3;
+        int maxPayload = 100;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
@@ -126,14 +129,75 @@ public class Node {
         Scanner scanner = new Scanner(System.in);
         while(socket.isConnected()  && !killNode) {
             String messageToSend = scanner.nextLine();
-            bufferedToTracker.write(messageToSend);
-            bufferedToTracker.newLine();
-            bufferedToTracker.flush();
 
-            if (messageToSend.charAt(0) == 'd'){
+            if (messageToSend.equals("d")){
+                bufferedToTracker.write(messageToSend);
+                bufferedToTracker.newLine();
+                bufferedToTracker.flush();
                 disconnectNode();
             }
+            else if(messageToSend.equals("i") || messageToSend.startsWith("GET ")){
+                bufferedToTracker.write(messageToSend);
+                bufferedToTracker.newLine();
+                bufferedToTracker.flush();
+            }
+            else{
+                System.out.println("Invalid input!");
+            }
+
         }
+    }
+
+
+    public void defragmentationFromFSTracker(String message){
+        int aux = 0;
+        String fragment = "";
+        String fragmentMax = "";
+        String payload = "";
+        for(int i = 0; i < message.length(); i++) {
+            if (message.charAt(i)=='|'){
+                aux = 2;
+            }
+            else if (message.charAt(i) == '/'){
+                aux = 1;
+            }
+            else if(aux == 0){
+                fragment += message.charAt(i);
+            }
+            else if(aux == 1){
+                fragmentMax += message.charAt(i);
+            }
+            else {
+                payload += message.charAt(i);
+            }
+        }
+
+        if (this.defragmentMessages.isEmpty()){
+            this.defragmentMessages = new ArrayList<>(Collections.nCopies(Integer.parseInt(fragmentMax), null));
+        } 
+
+        this.defragmentMessages.set(Integer.parseInt(fragment)-1, payload);
+
+        String totalMessage = "";
+
+        int cont = 0;
+        for (String block : this.defragmentMessages) {
+            if (block != null) {
+                cont++;
+            }
+        }
+
+        if (cont == Integer.parseInt(fragmentMax)){
+
+            for (int i=0; i<Integer.parseInt(fragmentMax); i++){
+                totalMessage += defragmentMessages.get(i);
+            }
+            defragmentMessages.clear();
+            System.out.println("\n\n THIS IS IT:" +totalMessage);
+        }
+        
+        
+        
     }
 
 
@@ -169,16 +233,13 @@ public class Node {
                 while (socket.isConnected() && !killNode) {
                     try {
                         msgFromChat = bufferedFromTracker.readLine();
-                        System.out.println(msgFromChat);
+                        defragmentationFromFSTracker(msgFromChat);
                     } catch (IOException e) {
                     }
                 }
             }
         }).start();
     }
-
-
-
 
 
     public static void main (String[] args) throws IOException{

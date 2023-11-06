@@ -1,3 +1,4 @@
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -8,12 +9,10 @@ import java.util.*;
 
 public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
-    private Map<String, Map<Integer, String>> defragmentMessages;
+    private Map<String, List<String>> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
-    private ServerSocket trackerSocket;
 
     public FS_Tracker(ServerSocket trackerSocket){
-        this.trackerSocket = trackerSocket;
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
         this.defragmentMessages = new HashMap<>();
@@ -36,7 +35,6 @@ public class FS_Tracker {
 
 
     public void insertInfo(String fileName, Integer blockNumber, String ipNode){
-
         insertTimeStamps(LocalTime.now(), ipNode);
         if (fileName.equals("null")){
             return;
@@ -48,9 +46,11 @@ public class FS_Tracker {
         if (!blockMap.containsKey(blockNumber)) blockMap.put(blockNumber, new ArrayList<>());
         List<String> ipList = blockMap.get(blockNumber);
 
-        ipList.add(ipNode);
-        blockMap.put(blockNumber, ipList);
-        fileMemory.put(fileName, blockMap);
+        if (!ipList.contains(ipNode)){
+            ipList.add(ipNode);
+            blockMap.put(blockNumber, ipList);
+            fileMemory.put(fileName, blockMap);
+        }
     }
 
     public void insertTimeStamps(LocalTime time, String ipNode){
@@ -145,8 +145,7 @@ public class FS_Tracker {
             return;
         } 
         if (!fragmentNumber.equals("0")){
-            //System.out.print(ipNode+"!!!!"+payload+"!!!!"+fragmentNumber);
-            //defragmentation(ipNode, payload, fragmentNumber);
+            defragmentationFromNode(ipNode, payload, fragmentNumber);
             return;
         }
 
@@ -181,7 +180,7 @@ public class FS_Tracker {
                     currentBlock *= 10;
                 }
                 else{
-                    insertInfo(currentFile,currentBlock,ipNode);
+                    insertInfo(currentFile.substring(0,currentFile.length()-6),currentBlock,ipNode);
                     // System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
                     currentBlock = 0;
                 }
@@ -191,7 +190,7 @@ public class FS_Tracker {
     }
 
 
-    public void defragmentation(String ipNode, String payload, String fragInfo){
+    public void defragmentationFromNode(String ipNode, String payload, String fragInfo){
         String fragment = "";
         String fragmentMax = "";
         int aux = 0;
@@ -205,36 +204,84 @@ public class FS_Tracker {
             }
         }
 
-        if (!defragmentMessages.containsKey(ipNode)) defragmentMessages.put(ipNode, new HashMap<>());
-        Map<Integer,String> blocksIP = defragmentMessages.get(ipNode);
+        if (!defragmentMessages.containsKey(ipNode)) defragmentMessages.put(ipNode, new ArrayList<>(Collections.nCopies(Integer.parseInt(fragmentMax), null)));
+        List<String> blocksIP = defragmentMessages.get(ipNode);
 
-        if (!blocksIP.containsKey(Integer.parseInt(fragment))) blocksIP.put(Integer.parseInt(fragment), payload);
+        blocksIP.set(Integer.parseInt(fragment)-1, payload);
 
         defragmentMessages.put(ipNode, blocksIP);
 
         String totalMessage = "";
-        Map<Integer,String> all_info = defragmentMessages.get(ipNode);
-        if (all_info.size() == Integer.parseInt(fragmentMax)){
+        List<String> all_info = defragmentMessages.get(ipNode);
+
+        int cont = 0;
+        for (String block : all_info) {
+            if (block != null) {
+                cont++;
+            }
+        }
+
+        if (cont == Integer.parseInt(fragmentMax)){
 
             for (int i=0; i<Integer.parseInt(fragmentMax); i++){
                 totalMessage += all_info.get(i);
             }
+            defragmentMessages.remove(ipNode);
+            messageParser(ipNode + "|" + totalMessage.length() + "|0|" +totalMessage);
+            //System.out.println("\n\n THIS IS IT:" +totalMessage);
         }
-        messageParser(totalMessage);
+        
     }
 
-    public void pickFile(String fileName){
+    public String pickFile(String fileName){
+        String messageToSend = "";
         Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
+        if (blockMap == null) return "File " + fileName + " was not found!";
         for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
-            String entrada = entry.getValue().get(0);
-            //System.out.println(entrada + " tem o bloco " + entry.getKey());
-            //
-            // FALTA FAZER FUNÇÃO DE TRANSFERÊNCIA
-            // DO BLOCO DE NODE PARA NODE
-            //
-            sendIPBack(fileName, entry.getKey());
+            int blockNumber = entry.getKey();
+            List<String> ipAddr = entry.getValue();
+
+            if (!ipAddr.isEmpty()){
+                messageToSend += blockNumber + ":" + String.join(",", ipAddr) + ";";
+                }
+            }
+        return messageToSend;
+    }
+
+
+    
+    // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
+    public void sendInfoToNode(String payload, BufferedWriter bufferedToNode) throws IOException{
+        int maxPayload = 5;
+        int payloadSize = payload.length();
+        
+        if (payloadSize<=maxPayload) {
+            String finalMessage = "0|" + payload;
+            bufferedToNode.write(finalMessage);
+            bufferedToNode.newLine();
+            bufferedToNode.flush();
+        }
+        else{
+            int totalFragments = (int)Math.ceil((double)payloadSize/maxPayload);
+
+            for (int i = 1; i <= totalFragments; i++){
+                int start = (i * maxPayload) - maxPayload;
+                int end = i * maxPayload;
+                if (end > payloadSize) {
+                    end = payloadSize;
+                }
+                String message = i + "/" + totalFragments + "|" + payload.substring(start, end);
+                System.out.println(message);
+                bufferedToNode.write(message);
+                bufferedToNode.newLine();
+                bufferedToNode.flush();
+            }
+            
         }
     }
+
+
+
 
 
     public void memoryToString() {
@@ -270,8 +317,7 @@ public class FS_Tracker {
                     .append(", Time: ").append(time).append("\n");
         }
         if(result.length() == 0) System.out.println("VAZIO");
-        else System.out.println(result.toString());
-        
+        else System.out.println(result.toString());        
     }
 
 
