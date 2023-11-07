@@ -180,7 +180,7 @@ public class FS_Tracker {
                     currentBlock *= 10;
                 }
                 else{
-                    insertInfo(currentFile.substring(0,currentFile.length()-6),currentBlock,ipNode);
+                    insertInfo(currentFile,currentBlock,ipNode);
                     // System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
                     currentBlock = 0;
                 }
@@ -233,10 +233,15 @@ public class FS_Tracker {
         
     }
 
-    public String pickFile(String fileName){
+    public String pickFile(String fileName, BufferedWriter bufferedToNode) throws IOException{
         String messageToSend = "";
         Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
-        if (blockMap == null) return "File " + fileName + " was not found!";
+        if (blockMap == null){
+            bufferedToNode.write("File " + fileName + " was not found!");
+            bufferedToNode.newLine();
+            bufferedToNode.flush();
+            return "ERROR";
+        } 
         for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
             int blockNumber = entry.getKey();
             List<String> ipAddr = entry.getValue();
@@ -252,6 +257,9 @@ public class FS_Tracker {
     
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToNode(String payload, BufferedWriter bufferedToNode) throws IOException{
+        if (payload.equals("ERROR")){
+            return;
+        }
         int maxPayload = 5;
         int payloadSize = payload.length();
         
@@ -271,7 +279,7 @@ public class FS_Tracker {
                     end = payloadSize;
                 }
                 String message = i + "/" + totalFragments + "|" + payload.substring(start, end);
-                System.out.println(message);
+                //System.out.println(message);
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
                 bufferedToNode.flush();

@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.time.LocalTime;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Node {
     private String ipNode;
@@ -37,7 +39,7 @@ public class Node {
         Arrays.sort(allFiles);
         for (File file : allFiles){
             String fName = file.getName();
-            String fileName = fName.substring(0, fName.length()-2);
+            String fileName = fName.substring(0, fName.length()-8);
             char unitChar = fName.charAt(fName.length()-1);
             char decimalChar = fName.charAt(fName.length()-2);
 
@@ -64,13 +66,13 @@ public class Node {
                 }
         }
         payload += ";";
-        System.out.println(payload);
+        System.out.println("Payload from file blocks: " +payload +"\n\n");
         return payload;
     }
 
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
-        int maxPayload = 100;
+        int maxPayload = 30;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
@@ -89,7 +91,7 @@ public class Node {
                     end = payloadSize;
                 }
                 String message = this.ipNode + "|" + (end-start) + "|" + i + "/" + totalFragments + "|" + payload.substring(start, end);
-                System.out.println(message);
+                //System.out.println("Fragmentações:"+message);
                 bufferedToTracker.write(message);
                 bufferedToTracker.newLine();
                 bufferedToTracker.flush();
@@ -150,6 +152,10 @@ public class Node {
 
 
     public void defragmentationFromFSTracker(String message){
+        if (message.startsWith("File")){
+            System.out.println(message);
+            return;
+        }
         int aux = 0;
         String fragment = "";
         String fragmentMax = "";
@@ -193,11 +199,58 @@ public class Node {
                 totalMessage += defragmentMessages.get(i);
             }
             defragmentMessages.clear();
-            System.out.println("\n\n THIS IS IT:" +totalMessage);
+            System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +totalMessage +"\n\n");
+            getBlocksFromNodes(totalMessage);
         }
-        
-        
-        
+    }
+
+
+    public void getBlocksFromNodes (String payload){
+        Map<Integer, List<String>> blocksToRetreive = new HashMap<>();
+        String blockNum = "";
+        String ipAdress = "";
+        List<String> allIps = new ArrayList<>();
+        int aux = 0;
+        for (int i=0; i<payload.length(); i++){
+
+            // Sabemos o bloco
+            if(payload.charAt(i) == ':'){
+                aux = 1;
+            }
+            // Bloco termina
+            else if(payload.charAt(i) == ';'){
+                allIps.add(ipAdress);
+                aux = 0;
+                if (!blocksToRetreive.containsKey(Integer.parseInt(blockNum))) {
+                    blocksToRetreive.put(Integer.parseInt(blockNum), new ArrayList<>());
+                }
+                blocksToRetreive.get(Integer.parseInt(blockNum)).addAll(allIps);
+                blockNum = "";
+                ipAdress = "";
+                allIps.clear();
+            }
+            // Novo ip
+            else if(payload.charAt(i) == ','){
+                allIps.add(ipAdress);
+                ipAdress = "";
+            }
+            // Determinar o número do bloco
+            else if(aux == 0){
+                blockNum += payload.charAt(i);
+            }
+            // Determinar o número do ip
+            else{
+                ipAdress += payload.charAt(i);
+            }
+        }
+
+        for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
+            Integer key = entry.getKey();
+            List<String> values = entry.getValue();
+
+            System.out.println("Key: " + key);
+            System.out.println("Values: " + values);
+        }
     }
 
 

@@ -20,8 +20,9 @@ public class NodeHandler implements Runnable {
         this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
         this.fs = fs;
         String messageReceived = bufferedFromNode.readLine();
-        System.out.println(messageReceived);
         this.ipAdress = this.fs.ipAdressNode(messageReceived);
+        System.out.println("Node "+this.ipAdress + " is connected.");
+        System.out.println(messageReceived);
         this.fs.messageParser(messageReceived);
     }
 
@@ -65,7 +66,7 @@ public class NodeHandler implements Runnable {
                         System.out.println("##############\n");
                     }
                     else if (aux.length() >= 5 && aux.startsWith("GET ")){
-                        String messageToNode = this.fs.pickFile(aux.substring(4));
+                        String messageToNode = this.fs.pickFile(aux.substring(4), bufferedToNode);
                         this.fs.sendInfoToNode(messageToNode,bufferedToNode);
                     }
                     else{
