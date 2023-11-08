@@ -1,6 +1,5 @@
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
@@ -9,7 +8,7 @@ import java.util.*;
 
 public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
-    private Map<String, List<String>> defragmentMessages;
+    private Map<String, String> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
 
     public FS_Tracker(ServerSocket trackerSocket){
@@ -83,6 +82,7 @@ public class FS_Tracker {
         }
 
         this.timeStamps.remove(ipDisc);
+        System.out.println("Node " + ipDisc + " has been disconnected");
     }
 
     public void verifyTimeStamp(){
@@ -204,31 +204,17 @@ public class FS_Tracker {
             }
         }
 
-        if (!defragmentMessages.containsKey(ipNode)) defragmentMessages.put(ipNode, new ArrayList<>(Collections.nCopies(Integer.parseInt(fragmentMax), null)));
-        List<String> blocksIP = defragmentMessages.get(ipNode);
+        if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
+        String blocksIP = this.defragmentMessages.get(ipNode);
 
-        blocksIP.set(Integer.parseInt(fragment)-1, payload);
+        blocksIP+=payload;
 
-        defragmentMessages.put(ipNode, blocksIP);
+        this.defragmentMessages.put(ipNode, blocksIP);
 
-        String totalMessage = "";
-        List<String> all_info = defragmentMessages.get(ipNode);
-
-        int cont = 0;
-        for (String block : all_info) {
-            if (block != null) {
-                cont++;
-            }
-        }
-
-        if (cont == Integer.parseInt(fragmentMax)){
-
-            for (int i=0; i<Integer.parseInt(fragmentMax); i++){
-                totalMessage += all_info.get(i);
-            }
-            defragmentMessages.remove(ipNode);
-            messageParser(ipNode + "|" + totalMessage.length() + "|0|" +totalMessage);
-            //System.out.println("\n\n THIS IS IT:" +totalMessage);
+        if (Integer.parseInt(fragment) == Integer.parseInt(fragmentMax)){
+            String finalMessage = this.defragmentMessages.get(ipNode);
+            this.defragmentMessages.remove(ipNode);
+            messageParser(ipNode + "|" + finalMessage.length() + "|0|" +finalMessage);
         }
         
     }
@@ -260,11 +246,12 @@ public class FS_Tracker {
         if (payload.equals("ERROR")){
             return;
         }
-        int maxPayload = 5;
+        int maxPayload = 150;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
-            String finalMessage = "0|" + payload;
+            String finalMessage = "1/1|" + payload;
+            System.out.println(finalMessage);
             bufferedToNode.write(finalMessage);
             bufferedToNode.newLine();
             bufferedToNode.flush();
@@ -279,7 +266,7 @@ public class FS_Tracker {
                     end = payloadSize;
                 }
                 String message = i + "/" + totalFragments + "|" + payload.substring(start, end);
-                //System.out.println(message);
+                System.out.println(message);
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
                 bufferedToNode.flush();

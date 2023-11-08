@@ -46,15 +46,8 @@ public class NodeHandler implements Runnable {
 
                 // Disconect node from FSTracker
                 if (aux.charAt(0) == 'd'){
-                    System.out.println("Node " + this.ipAdress + " has been disconnected");
                     this.fs.deleteDisconnectedNode(this.ipAdress);
-                    try{
-                        bufferedFromNode.close();
-                        bufferedToNode.close();
-                        socket.close();  
-                    } catch (IOException a){
-                    System.out.println("ERROR CLOSING NODE");
-                    }
+                    break;
                 }
                 else{
                     if (aux.charAt(0) == 'i'){

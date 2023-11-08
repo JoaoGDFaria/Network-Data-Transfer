@@ -5,24 +5,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.time.LocalTime;
 import java.util.*;
-import java.util.regex.Pattern;
 
 public class Node {
     private String ipNode;
-    private List<String> files;
     private boolean killNode = false;
     private String pathToFiles;
-    private List<String> defragmentMessages;
+    private String defragmentMessages;
     private Socket socket;
     private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
 
 
-    public Node(String ip, Socket socket, String info, String pathToFiles) throws IOException{
+    public Node(String ip, Socket socket, String pathToFiles) throws IOException{
         this.ipNode = ip;
-        this.defragmentMessages = new ArrayList<>();
+        this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
         this.socket = socket;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
@@ -72,7 +69,7 @@ public class Node {
 
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
-        int maxPayload = 30;
+        int maxPayload = 300;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
@@ -91,7 +88,7 @@ public class Node {
                     end = payloadSize;
                 }
                 String message = this.ipNode + "|" + (end-start) + "|" + i + "/" + totalFragments + "|" + payload.substring(start, end);
-                //System.out.println("Fragmentações:"+message);
+                System.out.println("Fragmentações:"+message);
                 bufferedToTracker.write(message);
                 bufferedToTracker.newLine();
                 bufferedToTracker.flush();
@@ -178,29 +175,12 @@ public class Node {
             }
         }
 
-        if (this.defragmentMessages.isEmpty()){
-            this.defragmentMessages = new ArrayList<>(Collections.nCopies(Integer.parseInt(fragmentMax), null));
-        } 
+        this.defragmentMessages += payload;
 
-        this.defragmentMessages.set(Integer.parseInt(fragment)-1, payload);
-
-        String totalMessage = "";
-
-        int cont = 0;
-        for (String block : this.defragmentMessages) {
-            if (block != null) {
-                cont++;
-            }
-        }
-
-        if (cont == Integer.parseInt(fragmentMax)){
-
-            for (int i=0; i<Integer.parseInt(fragmentMax); i++){
-                totalMessage += defragmentMessages.get(i);
-            }
-            defragmentMessages.clear();
-            System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +totalMessage +"\n\n");
-            getBlocksFromNodes(totalMessage);
+        if (Integer.parseInt(fragment) == Integer.parseInt(fragmentMax)){
+            System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");
+            getBlocksFromNodes(this.defragmentMessages);
+            this.defragmentMessages = "";
         }
     }
 
@@ -315,7 +295,7 @@ public class Node {
 
 
         System.out.println("Conexão FS Track Protocol com servidor " + socket.getInetAddress().getHostAddress() + " porta 9090.\n");
-        Node node = new Node(ipNode,socket, ipNode + "|30|0|file1:223,3,44;file3:5,4,2;", pathToFiles);
+        Node node = new Node(ipNode,socket, pathToFiles);
         node.listenMessage();
         node.sendMessageToTracker();
     }
