@@ -5,11 +5,18 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
     private Map<String, String> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
+
+    private ReadWriteLock lock = new ReentrantReadWriteLock();
+    Lock writelock = lock.writeLock();
+    Lock readlock = lock.readLock();
 
     public FS_Tracker(ServerSocket trackerSocket){
         this.fileMemory = new HashMap<>();
@@ -53,7 +60,7 @@ public class FS_Tracker {
     }
 
     public void insertTimeStamps(LocalTime time, String ipNode){
-        this.timeStamps.put(ipNode, time);
+        this.timeStamps.put(ipNode, time); 
     }
 
     public void sendIPBack(String fileName, Integer blockNumber){
@@ -72,6 +79,7 @@ public class FS_Tracker {
     }
 
     public void deleteDisconnectedNode(String ipDisc){
+        writelock.lock();
         for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
             Map<Integer, List<String>> blockMap = entry.getValue();
 
@@ -80,8 +88,8 @@ public class FS_Tracker {
                 ipList.remove(ipDisc);
             }
         }
-
         this.timeStamps.remove(ipDisc);
+        writelock.unlock();
         System.out.println("Node " + ipDisc + " has been disconnected");
     }
 
@@ -220,22 +228,29 @@ public class FS_Tracker {
     }
 
     public String pickFile(String fileName, BufferedWriter bufferedToNode) throws IOException{
+        readlock.lock();
         String messageToSend = "";
-        Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
-        if (blockMap == null){
-            bufferedToNode.write("File " + fileName + " was not found!");
-            bufferedToNode.newLine();
-            bufferedToNode.flush();
-            return "ERROR";
-        } 
-        for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
-            int blockNumber = entry.getKey();
-            List<String> ipAddr = entry.getValue();
+        try{    
+            Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
+            if (blockMap == null){
+                bufferedToNode.write("File " + fileName + " was not found!");
+                bufferedToNode.newLine();
+                bufferedToNode.flush();
+                return "ERROR";
+            } 
+            for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
+                int blockNumber = entry.getKey();
+                List<String> ipAddr = entry.getValue();
 
-            if (!ipAddr.isEmpty()){
-                messageToSend += blockNumber + ":" + String.join(",", ipAddr) + ";";
+                if (!ipAddr.isEmpty()){
+                    messageToSend += blockNumber + ":" + String.join(",", ipAddr) + ";";
+                    }
                 }
-            }
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }finally{
+            readlock.unlock();
+        }
         return messageToSend;
     }
 
@@ -280,39 +295,51 @@ public class FS_Tracker {
 
 
     public void memoryToString() {
+        readlock.lock();
+        try{
+            StringBuilder result = new StringBuilder();
 
-        StringBuilder result = new StringBuilder();
+            for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()) {
+                String fileName = entry.getKey();
+                Map<Integer, List<String>> blockMap = entry.getValue();
 
-        for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()) {
-            String fileName = entry.getKey();
-            Map<Integer, List<String>> blockMap = entry.getValue();
+                for (Map.Entry<Integer, List<String>> blockEntry : blockMap.entrySet()) {
+                    Integer blockNumber = blockEntry.getKey();
+                    List<String> ipList = blockEntry.getValue();
 
-            for (Map.Entry<Integer, List<String>> blockEntry : blockMap.entrySet()) {
-                Integer blockNumber = blockEntry.getKey();
-                List<String> ipList = blockEntry.getValue();
-
-                result.append("File: ").append(fileName)
-                        .append(", Block: ").append(blockNumber)
-                        .append(", IPs: ").append(ipList).append("\n");
+                    result.append("File: ").append(fileName)
+                            .append(", Block: ").append(blockNumber)
+                            .append(", IPs: ").append(ipList).append("\n");
+                }
             }
+            if(result.length() == 0) System.out.println("VAZIO");
+            else System.out.println(result.toString());
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }finally{
+            readlock.unlock();
         }
-        if(result.length() == 0) System.out.println("VAZIO");
-        else System.out.println(result.toString());
     }
 
     public void timeToString(){
+        readlock.lock();
+        try{
+            StringBuilder result = new StringBuilder();
 
-        StringBuilder result = new StringBuilder();
+            for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
+                String ipName = entry.getKey();
+                String time = entry.getValue().toString();
 
-        for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
-            String ipName = entry.getKey();
-            String time = entry.getValue().toString();
-
-            result.append("IP: ").append(ipName)
-                    .append(", Time: ").append(time).append("\n");
+                result.append("IP: ").append(ipName)
+                        .append(", Time: ").append(time).append("\n");
+            }
+            if(result.length() == 0) System.out.println("VAZIO");
+            else System.out.println(result.toString());
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }finally{
+            readlock.unlock();
         }
-        if(result.length() == 0) System.out.println("VAZIO");
-        else System.out.println(result.toString());        
     }
 
 
