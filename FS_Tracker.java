@@ -126,7 +126,6 @@ public class FS_Tracker {
     // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
         String ipNode = "";
-        String payloadLength = "";
         String payload = "";
         String fragmentNumber = "";
         Integer aux = 0;
@@ -135,24 +134,26 @@ public class FS_Tracker {
             if (mensagem.charAt(i)=='|'){
                 aux += 1;
             }
+            // Ler IP
             else if (aux == 0){
                 ipNode += mensagem.charAt(i);
             }
+            // Ler fragmentação
             else if (aux == 1){
-                payloadLength += mensagem.charAt(i);
-            }
-            else if (aux == 2){
                 fragmentNumber += mensagem.charAt(i);
             }
-            else if(aux == 3 && Integer.parseInt(payloadLength) > 0){
+            // Ler payload
+            else if(aux == 2 && Integer.parseInt(fragmentNumber) > 0){
                 payload += mensagem.charAt(i);
             }
         }
-        if (payloadLength.equals("0")){
+        // Keep Alive
+        if (fragmentNumber.equals("0")){
             insertInfo("null", 0, ipNode);
             return;
         } 
-        if (!fragmentNumber.equals("0")){
+        // Defragment message
+        else if (!fragmentNumber.equals("1")){
             defragmentationFromNode(ipNode, payload, fragmentNumber);
             return;
         }
@@ -199,18 +200,6 @@ public class FS_Tracker {
 
 
     public void defragmentationFromNode(String ipNode, String payload, String fragInfo){
-        String fragment = "";
-        String fragmentMax = "";
-        int aux = 0;
-        for(int i=0; i<fragInfo.length();i++){
-            if (fragInfo.charAt(i) == '/') aux ++;
-            else if (aux == 0){
-                fragment += fragInfo.charAt(i);
-            }
-            else{
-                fragmentMax += fragInfo.charAt(i);
-            }
-        }
 
         if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
         String blocksIP = this.defragmentMessages.get(ipNode);
@@ -219,10 +208,10 @@ public class FS_Tracker {
 
         this.defragmentMessages.put(ipNode, blocksIP);
 
-        if (Integer.parseInt(fragment) == Integer.parseInt(fragmentMax)){
+        if (Integer.parseInt(fragInfo) == 3){
             String finalMessage = this.defragmentMessages.get(ipNode);
             this.defragmentMessages.remove(ipNode);
-            messageParser(ipNode + "|" + finalMessage.length() + "|0|" +finalMessage);
+            messageParser(ipNode + "|1|" +finalMessage);
         }
         
     }
@@ -261,11 +250,11 @@ public class FS_Tracker {
         if (payload.equals("ERROR")){
             return;
         }
-        int maxPayload = 150;
+        int maxPayload = 30;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
-            String finalMessage = "1/1|" + payload;
+            String finalMessage = "0|" + payload;
             System.out.println(finalMessage);
             bufferedToNode.write(finalMessage);
             bufferedToNode.newLine();
@@ -277,10 +266,15 @@ public class FS_Tracker {
             for (int i = 1; i <= totalFragments; i++){
                 int start = (i * maxPayload) - maxPayload;
                 int end = i * maxPayload;
+                String message;
                 if (end > payloadSize) {
                     end = payloadSize;
+                    message = "0|" + payload.substring(start, end);
                 }
-                String message = i + "/" + totalFragments + "|" + payload.substring(start, end);
+                else{
+                    message = "1|" + payload.substring(start, end);  
+                }
+                
                 System.out.println(message);
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
