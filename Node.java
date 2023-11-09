@@ -63,17 +63,18 @@ public class Node {
                 }
         }
         payload += ";";
-        System.out.println("Payload from file blocks: " +payload +"\n\n");
         return payload;
     }
 
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
-        int maxPayload = 300;
+        int maxPayload = 40;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
-            String finalMessage = this.ipNode + "|" + payloadSize + "|" + 0 + "|" + payload;
+            // Mensagem não fragmentada
+            String finalMessage = this.ipNode + "|" + 1 + "|" + payload;
+            System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
             bufferedToTracker.flush();
@@ -84,16 +85,22 @@ public class Node {
             for (int i = 1; i <= totalFragments; i++){
                 int start = (i * maxPayload) - maxPayload;
                 int end = i * maxPayload;
+                String message = "";
                 if (end > payloadSize) {
                     end = payloadSize;
+                    // Mensagem com fragmentação (É a última)
+                    message = this.ipNode + "|" + 3 + "|" + payload.substring(start, end);
                 }
-                String message = this.ipNode + "|" + (end-start) + "|" + i + "/" + totalFragments + "|" + payload.substring(start, end);
-                System.out.println("Fragmentações:"+message);
+                else{
+                    // Mensagem com fragmentação (não é a última)
+                    message = this.ipNode + "|" + 2 + "|" + payload.substring(start, end);           
+                }
+                System.out.println("Payload Sent to Tracker: " + message);
                 bufferedToTracker.write(message);
                 bufferedToTracker.newLine();
                 bufferedToTracker.flush();
             }
-            
+      
         }
     }
 
@@ -107,6 +114,7 @@ public class Node {
             public void run() {
                 try {
                     if (!killNode){
+                        // Keep Alive
                         bufferedToTracker.write(ipNode + "|0");
                         bufferedToTracker.newLine();
                         bufferedToTracker.flush();  
@@ -155,21 +163,16 @@ public class Node {
         }
         int aux = 0;
         String fragment = "";
-        String fragmentMax = "";
         String payload = "";
         for(int i = 0; i < message.length(); i++) {
             if (message.charAt(i)=='|'){
-                aux = 2;
-            }
-            else if (message.charAt(i) == '/'){
                 aux = 1;
             }
+            // Ler fragmento
             else if(aux == 0){
                 fragment += message.charAt(i);
             }
-            else if(aux == 1){
-                fragmentMax += message.charAt(i);
-            }
+            // Ler payload
             else {
                 payload += message.charAt(i);
             }
@@ -177,7 +180,7 @@ public class Node {
 
         this.defragmentMessages += payload;
 
-        if (Integer.parseInt(fragment) == Integer.parseInt(fragmentMax)){
+        if (Integer.parseInt(fragment) == 0){
             System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");
             getBlocksFromNodes(this.defragmentMessages);
             this.defragmentMessages = "";
@@ -291,7 +294,6 @@ public class Node {
         else{
             pathToFiles = "/home/core/Desktop/Projeto/Node4";
         }
-
 
 
         System.out.println("Conexão FS Track Protocol com servidor " + socket.getInetAddress().getHostAddress() + " porta 9090.\n");
