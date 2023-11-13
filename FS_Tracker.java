@@ -271,7 +271,7 @@ public class FS_Tracker {
         
         if (payloadSize<=maxPayload) {
             String finalMessage = "0|" + payload;
-            System.out.println(finalMessage);
+            //System.out.println(finalMessage);  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToNode.write(finalMessage);
             bufferedToNode.newLine();
             bufferedToNode.flush();
@@ -291,7 +291,7 @@ public class FS_Tracker {
                     message = "1|" + payload.substring(start, end);  
                 }
                 
-                System.out.println(message);
+                //System.out.println(message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
                 bufferedToNode.flush();

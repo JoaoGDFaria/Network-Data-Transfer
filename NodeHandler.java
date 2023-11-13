@@ -22,7 +22,7 @@ public class NodeHandler implements Runnable {
         String messageReceived = bufferedFromNode.readLine();
         this.ipAdress = this.fs.ipAdressNode(messageReceived);
         System.out.println("Node "+this.ipAdress + " is connected.");
-        System.out.println(messageReceived);
+        //System.out.println(messageReceived);  // COLOCAR ATIVO PARA DEMONSTRAR
         this.fs.messageParser(messageReceived);
     }
 
@@ -39,7 +39,7 @@ public class NodeHandler implements Runnable {
                         bufferedToNode.close();
                         socket.close();  
                     } catch (IOException a){
-                    System.out.println("ERROR CLOSING NODE");
+                        System.out.println("ERROR CLOSING NODE");
                     }
                     return;
                 } 
@@ -64,7 +64,7 @@ public class NodeHandler implements Runnable {
                     }
                     else{
                         this.fs.messageParser(aux);
-                        System.out.println(aux);
+                        //System.out.println(aux);  // COLOCAR ATIVO PARA DEMONSTRAR
                     }
                     //System.out.println(aux); 
                 }
