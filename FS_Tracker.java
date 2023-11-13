@@ -39,7 +39,7 @@ public class FS_Tracker {
         }
     }
 
-
+    // LOCKS WRITE E READ   FALTAAAAAAAAAAAAAAA
     public void insertInfo(String fileName, Integer blockNumber, String ipNode){
         insertTimeStamps(LocalTime.now(), ipNode);
         if (fileName.equals("null")){
@@ -59,10 +59,19 @@ public class FS_Tracker {
         }
     }
 
+    // LOCKS WRITE
     public void insertTimeStamps(LocalTime time, String ipNode){
-        this.timeStamps.put(ipNode, time); 
+        //writelock.lock();
+        try{
+           this.timeStamps.put(ipNode, time);  
+        }
+        finally{
+            //writelock.lock();
+        }
+        
     }
 
+    // LOCKS WRITE E READ FALTAAAAAAAAAAAAAAAAAAa
     public void sendIPBack(String fileName, Integer blockNumber){
 
         Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
@@ -78,21 +87,27 @@ public class FS_Tracker {
         fileMemory.put(fileName, blockMap);
     }
 
+    // LOCKS WRITE FALTAAAAAAAAAAAAAAAAAAA
     public void deleteDisconnectedNode(String ipDisc){
-        writelock.lock();
-        for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
-            Map<Integer, List<String>> blockMap = entry.getValue();
+        //writelock.lock();
+        try{
+            for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
+                Map<Integer, List<String>> blockMap = entry.getValue();
 
-            for (Map.Entry<Integer, List<String>> blockEntry : blockMap.entrySet()){
-                List<String> ipList = blockEntry.getValue();
-                ipList.remove(ipDisc);
+                for (Map.Entry<Integer, List<String>> blockEntry : blockMap.entrySet()){
+                    List<String> ipList = blockEntry.getValue();
+                    ipList.remove(ipDisc);
+                }
             }
+            this.timeStamps.remove(ipDisc);
         }
-        this.timeStamps.remove(ipDisc);
-        writelock.unlock();
+        finally{
+          //writelock.unlock();  
+        }
         System.out.println("Node " + ipDisc + " has been disconnected");
     }
 
+    // LOCKS READ WRITE FALTAAAAAAAAAAAAAAAA
     public void verifyTimeStamp(){
         LocalTime now = LocalTime.now();
         Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
@@ -123,6 +138,7 @@ public class FS_Tracker {
         return ipNode;
     }
 
+    // LOCKS READ AND WRITE FALTAAAAAAAAAAA
     // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
         String ipNode = "";
@@ -198,7 +214,7 @@ public class FS_Tracker {
         }
     }
 
-
+    // LOCKS READ AND WRITE FALTAAAAAAAAAa
     public void defragmentationFromNode(String ipNode, String payload, String fragInfo){
 
         if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
@@ -216,8 +232,9 @@ public class FS_Tracker {
         
     }
 
+    // LOCKS READ
     public String pickFile(String fileName, BufferedWriter bufferedToNode) throws IOException{
-        readlock.lock();
+        //readlock.lock();
         String messageToSend = "";
         try{    
             Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
@@ -238,13 +255,12 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            readlock.unlock();
+            //readlock.unlock();
         }
         return messageToSend;
     }
 
 
-    
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToNode(String payload, BufferedWriter bufferedToNode) throws IOException{
         if (payload.equals("ERROR")){
@@ -285,11 +301,9 @@ public class FS_Tracker {
     }
 
 
-
-
-
+    // LOCKS READ 
     public void memoryToString() {
-        readlock.lock();
+        //readlock.lock();
         try{
             StringBuilder result = new StringBuilder();
 
@@ -311,12 +325,13 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            readlock.unlock();
+            //readlock.unlock();
         }
     }
 
+    // LOCKS READ 
     public void timeToString(){
-        readlock.lock();
+        //readlock.lock();
         try{
             StringBuilder result = new StringBuilder();
 
@@ -332,22 +347,24 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            readlock.unlock();
+            //readlock.unlock();
         }
     }
 
 
     public void checkAlive(){
-        Timer timer = new Timer();
+        new Thread(() -> {
+            Timer timer = new Timer();
 
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                verifyTimeStamp();
-            }
-        };
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    verifyTimeStamp();
+                }
+            };
 
-        timer.scheduleAtFixedRate(task, 3000, 3000);
+            timer.scheduleAtFixedRate(task, 3000, 3000);
+        }).start();
     }
 
     public static void main (String[] args) throws IOException{
