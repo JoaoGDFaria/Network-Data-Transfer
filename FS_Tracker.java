@@ -13,6 +13,7 @@ public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
     private Map<String, String> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
+    private Map<String, Socket> sockets;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock();
     Lock writelock = lock.writeLock();
@@ -22,6 +23,7 @@ public class FS_Tracker {
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
         this.defragmentMessages = new HashMap<>();
+        this.sockets = new HashMap<>();
     }
 
 
@@ -89,6 +91,16 @@ public class FS_Tracker {
 
     // LOCKS WRITE FALTAAAAAAAAAAAAAAAAAAA
     public void deleteDisconnectedNode(String ipDisc){
+        if(this.sockets.containsKey(ipDisc)){
+            Socket socket = this.sockets.get(ipDisc);
+            if(!socket.isClosed()){
+                try{
+                    socket.close();
+                }catch (IOException a){
+                    a.printStackTrace();
+                }
+            }
+        }
         //writelock.lock();
         try{
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
@@ -125,7 +137,11 @@ public class FS_Tracker {
         }
     }
 
-    public String ipAdressNode(String mensagem){
+    public void adicionaSocket(Socket socket, String ip){
+        this.sockets.put(ip, socket);
+    }
+
+    public String ipAddressNode(String mensagem){
         String ipNode = "";
         for(int i = 0; i < mensagem.length(); i++) {
             if (mensagem.charAt(i)=='|'){

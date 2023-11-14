@@ -12,7 +12,7 @@ public class NodeHandler implements Runnable {
     private BufferedReader bufferedFromNode; // Ler informação enviada pelo cliente
     private BufferedWriter bufferedToNode; // Ler informação enviada para o cliente
     private FS_Tracker fs;
-    private String ipAdress;
+    private String ipAddress;
 
     public NodeHandler(Socket socket, FS_Tracker fs) throws IOException{
         this.socket = socket;
@@ -20,8 +20,9 @@ public class NodeHandler implements Runnable {
         this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
         this.fs = fs;
         String messageReceived = bufferedFromNode.readLine();
-        this.ipAdress = this.fs.ipAdressNode(messageReceived);
-        System.out.println("Node "+this.ipAdress + " is connected.");
+        this.ipAddress = this.fs.ipAddressNode(messageReceived);
+        this.fs.adicionaSocket(socket, this.ipAddress);
+        System.out.println("Node "+this.ipAddress + " is connected.");
         //System.out.println(messageReceived);  // COLOCAR ATIVO PARA DEMONSTRAR
         this.fs.messageParser(messageReceived);
     }
@@ -46,7 +47,7 @@ public class NodeHandler implements Runnable {
 
                 // Disconect node from FSTracker
                 if (aux.charAt(0) == 'd'){
-                    this.fs.deleteDisconnectedNode(this.ipAdress);
+                    this.fs.deleteDisconnectedNode(this.ipAddress);
                     break;
                 }
                 else{
@@ -64,14 +65,14 @@ public class NodeHandler implements Runnable {
                     }
                     else{
                         this.fs.messageParser(aux);
-                        //System.out.println(aux);  // COLOCAR ATIVO PARA DEMONSTRAR
+                        System.out.println(aux);  // COLOCAR ATIVO PARA DEMONSTRAR
                     }
                     //System.out.println(aux); 
                 }
                 
             
             } catch (IOException e){
-                this.fs.deleteDisconnectedNode(ipAdress);
+                this.fs.deleteDisconnectedNode(ipAddress);
                 try{
                     bufferedFromNode.close();
                     bufferedToNode.close();
