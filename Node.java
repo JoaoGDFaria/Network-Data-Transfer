@@ -8,6 +8,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class Node {
@@ -398,6 +401,39 @@ public class Node {
     }
 
 
+
+    public void sendFiles(String filename, String ipToSend) throws IOException{
+        File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
+        Path path = infoFile.toPath();
+        byte[] fileInBytes = null;
+        try{
+            fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        int maxPacketSize = 1000;
+
+        int totalBytes = fileInBytes.length;
+
+        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+
+        for (int i = 1; i <= totalFragments; i++){
+            int start = (i - 1) * maxPacketSize;
+            int end = i * maxPacketSize;
+            
+
+            // Mensagem com fragmentação (É a última)
+            if (end > totalBytes) {
+                end = totalBytes;
+            }
+            byte[] eachMessage = new byte[end-start];
+            System.arraycopy(fileInBytes, start, eachMessage, 0, end-start);
+            sendMessageToNodeInBytes(eachMessage,ipToSend,2);
+        }
+    }
+
     
 
 
@@ -415,13 +451,18 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
         
                         System.out.println("Received: " + responsenFromNode);
-                        String[] parts = responsenFromNode.split("\\|");
 
-                        if (responsenFromNode.startsWith("ACK")){
-                            // IP que recebeu a mensagem - ACK da mensagem
-                            infoProgression.put(parts[1], Integer.parseInt(parts[0]));
+                        if (responsenFromNode.charAt(0)=='0'){
+                            sendFiles("KaiCenat_blocoab","10.0.1.20");
                         }
-                        sendMessageToNode("ACK"+parts[0]+"|"+ipNode,parts[1],0);
+
+                        //String[] parts = responsenFromNode.split("\\|");
+
+                        //if (responsenFromNode.startsWith("ACK")){
+                        //    // IP que recebeu a mensagem - ACK da mensagem
+                        //    infoProgression.put(parts[1], Integer.parseInt(parts[0]));
+                        //}
+                        //sendMessageToNode("ACK"+parts[0]+"|"+ipNode,parts[1],0);
                         
 
                     }
@@ -440,9 +481,21 @@ public class Node {
         DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
         clientSocket.send(p);
         clientSocket.close();
-        timeProgression(messageToSend, ipToSend, ack_atual);
+        System.out.println("Sent: "+messageToSend);
+        //timeProgression(messageToSend, ipToSend, ack_atual);
     }
 
+
+
+        // IP a quem eu quero enviar
+    public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend, int ack_atual) throws IOException {
+        DatagramSocket clientSocket = new DatagramSocket();
+        DatagramPacket p = new DatagramPacket(messageToSend, messageToSend.length, InetAddress.getByName(ipToSend), 9090);
+        clientSocket.send(p);
+        clientSocket.close();
+        System.out.println("Sent: bytes");
+        //timeProgression(messageToSend, ipToSend, ack_atual);
+    }
 
 
     public void timeProgression(String messageToSend, String ip, int ack_atual){
