@@ -93,6 +93,7 @@ public class FS_Tracker {
     public void deleteDisconnectedNode(String ipDisc){
         if(this.sockets.containsKey(ipDisc)){
             Socket socket = this.sockets.get(ipDisc);
+            this.sockets.remove(ipDisc);
             if(!socket.isClosed()){
                 try{
                     socket.close();

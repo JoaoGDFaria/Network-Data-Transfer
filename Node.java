@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -23,6 +24,7 @@ public class Node {
     private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
     private Map<String,Integer> infoProgression; // Regista as mensagens recebidas por UDP
+    private FileOutputStream outputStream;
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -31,6 +33,7 @@ public class Node {
         this.pathToFiles = pathToFiles;
         this.socketUDP = socketUDP;
         this.socketTCP = socketTCP;
+        this.outputStream = null;
         this.infoProgression = new HashMap<>();
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socketTCP.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
@@ -144,7 +147,8 @@ public class Node {
                         }
                         
                     } catch (IOException e) {
-                        System.out.println("ERROR WRITING FROM NODE");
+                        System.out.println("Socket closed");
+                        System.exit(0);
                     }
                     
                 }
@@ -195,7 +199,7 @@ public class Node {
 
     public void defragmentationFromFSTracker(String message){
         if (message.startsWith("File")){
-            //System.out.println(message);  // COLOCAR ATIVO PARA DEMONSTRAR
+            System.out.println(message);
             return;
         }
         int aux = 0;
@@ -413,6 +417,8 @@ public class Node {
             e.printStackTrace();
         }
 
+        sendMessageToNode("F|"+filename, ipToSend, 0);
+
         int maxPacketSize = 1000;
 
         int totalBytes = fileInBytes.length;
@@ -434,6 +440,15 @@ public class Node {
         }
     }
 
+    public void getFile(byte[] messageFragment){
+        try{
+            outputStream.write(messageFragment);
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
     
 
 
@@ -449,11 +464,20 @@ public class Node {
 
                         socketUDP.receive(receivePacket);
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
-        
-                        System.out.println("Received: " + responsenFromNode);
-
-                        if (responsenFromNode.charAt(0)=='0'){
-                            sendFiles("KaiCenat_blocoab","10.0.1.20");
+                        // First message
+                        if (responsenFromNode.startsWith("0|")){
+                            System.out.println("Received: " + responsenFromNode);
+                            sendFiles("KaiCenat_blocoab","10.0.2.20");
+                        }
+                        // Create the file
+                        else if (responsenFromNode.startsWith("F|")){
+                            System.out.println("Received FileName: " + responsenFromNode.substring(2));
+                            File file = new File ("/home/core/Desktop/Projeto/Test/" + responsenFromNode.substring(2));
+                            outputStream = new FileOutputStream(file);
+                        }
+                        // Fragmented messages
+                        else{
+                            getFile(receivePacket.getData());
                         }
 
                         //String[] parts = responsenFromNode.split("\\|");
@@ -487,13 +511,12 @@ public class Node {
 
 
 
-        // IP a quem eu quero enviar
+    // IP a quem eu quero enviar
     public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend, int ack_atual) throws IOException {
         DatagramSocket clientSocket = new DatagramSocket();
         DatagramPacket p = new DatagramPacket(messageToSend, messageToSend.length, InetAddress.getByName(ipToSend), 9090);
         clientSocket.send(p);
         clientSocket.close();
-        System.out.println("Sent: bytes");
         //timeProgression(messageToSend, ipToSend, ack_atual);
     }
 
