@@ -376,12 +376,12 @@ public class Node {
             String key = entry.getValue().get(0); // primeiro ip que contém o bloco
             List<String> allValues = entry.getValue(); // todos os ips que contém o bloco
 
-
+            
             if (!allValues.contains(ipNode)){
                 if (!messages.containsKey(key)) {
                     messages.put(key, value);
                     // IP que recebeu a mensagem - ACK da mensagem
-                    infoProgression.put(key, -1);
+                    //infoProgression.put(key, -1);
                 }
                 else{
                     String aux = messages.get(key)+","+value;
@@ -395,7 +395,8 @@ public class Node {
             String key = entry.getKey();
             String values = entry.getValue();
             try{
-                sendMessageToNode("0|"+ipNode+"|"+values, key, 0);
+                sendMessageToNode("0|"+ipNode+"|"+values, key);
+                break; // TO REMOVE LATER
             }
             catch (Exception e){
                 System.out.println(e.getMessage());
@@ -410,6 +411,7 @@ public class Node {
         File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
         Path path = infoFile.toPath();
         byte[] fileInBytes = null;
+        int numero_sequencia = 0;
         try{
             fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
         }
@@ -417,32 +419,54 @@ public class Node {
             e.printStackTrace();
         }
 
-        sendMessageToNode("F|"+filename, ipToSend, 0);
+        sendMessageToNode("F|"+filename, ipToSend);
 
-        int maxPacketSize = 1000;
+        int maxPacketSize = 1022;
 
         int totalBytes = fileInBytes.length;
 
         int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
 
+        boolean isLastFragment = false;
+
         for (int i = 1; i <= totalFragments; i++){
             int start = (i - 1) * maxPacketSize;
             int end = i * maxPacketSize;
+            numero_sequencia++;
             
 
             // Mensagem com fragmentação (É a última)
             if (end > totalBytes) {
                 end = totalBytes;
+                isLastFragment = true;
             }
-            byte[] eachMessage = new byte[end-start];
-            System.arraycopy(fileInBytes, start, eachMessage, 0, end-start);
-            sendMessageToNodeInBytes(eachMessage,ipToSend,2);
+            byte[] eachMessage = new byte[end-start+2];
+            if (isLastFragment){
+                eachMessage[0] = (byte) (1);
+            }
+            else{
+                eachMessage[0] = (byte) (0);
+            }
+            eachMessage[1] = (byte) (numero_sequencia);
+            System.arraycopy(fileInBytes, start, eachMessage, 2, end-start);
+            sendMessageToNodeInBytes(eachMessage,ipToSend);
         }
     }
-
+    public int cont=0;
     public void getFile(byte[] messageFragment){
+        byte[] file_info = new byte[messageFragment.length-2];
+        cont += file_info.length;
+        int last_fragment = (messageFragment[0]);
+        int numero_sequencia = (messageFragment[1]);
+
+        System.arraycopy(messageFragment, 2, file_info, 0, file_info.length);
         try{
-            outputStream.write(messageFragment);
+            outputStream.write(file_info);
+            if (last_fragment == 1){
+                outputStream.close();
+                System.out.println(cont);
+                cont=0;
+            }
         }
         catch (IOException e){
             e.printStackTrace();
@@ -499,7 +523,7 @@ public class Node {
     }
 
     // IP a quem eu quero enviar
-    public void sendMessageToNode(String messageToSend, String ipToSend, int ack_atual) throws IOException {
+    public void sendMessageToNode(String messageToSend, String ipToSend) throws IOException {
         DatagramSocket clientSocket = new DatagramSocket();
         byte[] buf = messageToSend.getBytes();
         DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
@@ -512,7 +536,7 @@ public class Node {
 
 
     // IP a quem eu quero enviar
-    public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend, int ack_atual) throws IOException {
+    public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend) throws IOException {
         DatagramSocket clientSocket = new DatagramSocket();
         DatagramPacket p = new DatagramPacket(messageToSend, messageToSend.length, InetAddress.getByName(ipToSend), 9090);
         clientSocket.send(p);
@@ -521,34 +545,34 @@ public class Node {
     }
 
 
-    public void timeProgression(String messageToSend, String ip, int ack_atual){
-        new Thread(() -> {
-            Timer timer = new Timer();
-
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    if (infoProgression.containsKey(ip)) {
-                        int ultimo_ack = infoProgression.get(ip);
-                        if (ack_atual < ultimo_ack){
-                            try {
-                                System.out.println("CHAMEI NOVAMENTE");
-                                sendMessageToNode(messageToSend,ip,ack_atual);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                    else{
-                        System.out.println("nao cHEGEUI AGUIO   "+ip+"    "+ack_atual);
-                    }
-                    timer.cancel();
-                }
-            };
-
-            timer.schedule(task, 500);
-        }).start();
-    }
+//    public void timeProgression(String messageToSend, String ip, int ack_atual){
+//        new Thread(() -> {
+//            Timer timer = new Timer();
+//
+//            TimerTask task = new TimerTask() {
+//                @Override
+//                public void run() {
+//                    if (infoProgression.containsKey(ip)) {
+//                        int ultimo_ack = infoProgression.get(ip);
+//                        if (ack_atual < ultimo_ack){
+//                            try {
+//                                System.out.println("CHAMEI NOVAMENTE");
+//                                sendMessageToNode(messageToSend,ip,ack_atual);
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                    else{
+//                        System.out.println("nao cHEGEUI AGUIO   "+ip+"    "+ack_atual);
+//                    }
+//                    timer.cancel();
+//                }
+//            };
+//
+//            timer.schedule(task, 500);
+//        }).start();
+//    }
     
 
 
@@ -614,3 +638,8 @@ public class Node {
     }
 
 }
+
+
+
+// 1 byte para numero de sequencia é suficiente?
+// 1024 bytes por cada fragmento é suficiente?
