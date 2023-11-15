@@ -33,7 +33,8 @@ public class Node {
 
     private File infoFile;
     private Path path;
-    private byte[] fileInBytes = null;
+    private byte[] fileInBytes;
+    private int totalSize = 0;
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -43,6 +44,7 @@ public class Node {
         this.socketUDP = socketUDP;
         this.socketTCP = socketTCP;
         this.outputStream = null;
+        this.fileInBytes = null;
         this.infoProgression = new HashMap<>();
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socketTCP.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
@@ -425,7 +427,7 @@ public class Node {
             e.printStackTrace();
         }
 
-        sendMessageToNode("F|"+filename, ipToSend);
+        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
         sendFragment("KaiCenat_blocoab","10.0.2.20",1);
     }
 
@@ -479,16 +481,10 @@ public class Node {
 
             try{
                 if (last_fragment == 1){
-                    int size = 0;
-                    for (byte b : messageFragment){
-                        if(b == 0){
-                            break;
-                        }
-                        size++;
-                    }
+                    int size = totalSize%1021;
 
-                    byte[] file_info = new byte[size-3];
-                    System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
+                    byte[] file_info = new byte[size];
+                    System.arraycopy(messageFragment, 3, file_info, 0, size);
                     outputStream.write(file_info);
 
                     outputStream.close();
@@ -540,8 +536,10 @@ public class Node {
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
-                            System.out.println("Received FileName: " + responsenFromNode.substring(2));
-                            File file = new File ("/home/core/Desktop/Projeto/Test/" + responsenFromNode.substring(2));
+                            String[] split = responsenFromNode.split("\\|");
+                            System.out.println("Received FileName: " + split[1]);
+                            totalSize = Integer.parseInt(split[2]);
+                            File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
                             outputStream = new FileOutputStream(file);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
