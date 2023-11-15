@@ -84,6 +84,7 @@ public class FS_Tracker {
     private Map<String, Map<Integer, List<String>>> fileMemory;
     private Map<String, String> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
+    private Map<String, Socket> sockets;
 
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -91,6 +92,7 @@ public class FS_Tracker {
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
         this.defragmentMessages = new HashMap<>();
+        this.sockets = new HashMap<>();
     }
 
     private void startFS_Tracker(Integer port) throws IOException {
@@ -153,6 +155,18 @@ public class FS_Tracker {
     public void deleteDisconnectedNode(String ipDisc){
         try{
             lock.writeLock().lock();
+
+            if(this.sockets.containsKey(ipDisc)){
+                Socket socket = this.sockets.get(ipDisc);
+                this.sockets.remove(ipDisc);
+                if(!socket.isClosed()){
+                    try{
+                        socket.close();
+                    }catch (IOException a){
+                        a.printStackTrace();
+                    }
+                }
+            }
 
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
                 Map<Integer, List<String>> blockMap = entry.getValue();
@@ -434,6 +448,10 @@ public class FS_Tracker {
         }finally{
             lock.readLock().unlock();
         }
+    }
+
+    public void adicionaSocket(Socket socket, String ip){
+        this.sockets.put(ip, socket);
     }
 
     public static void main(String args[]) throws IOException{
