@@ -412,6 +412,7 @@ public class Node {
         Path path = infoFile.toPath();
         byte[] fileInBytes = null;
         int numero_sequencia = 0;
+        int cont = 0;
         try{
             fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
         }
@@ -421,7 +422,7 @@ public class Node {
 
         sendMessageToNode("F|"+filename, ipToSend);
 
-        int maxPacketSize = 1022;
+        int maxPacketSize = 1021;
 
         int totalBytes = fileInBytes.length;
 
@@ -440,31 +441,36 @@ public class Node {
                 end = totalBytes;
                 isLastFragment = true;
             }
-            byte[] eachMessage = new byte[end-start+2];
+            byte[] eachMessage = new byte[end-start+3];
             if (isLastFragment){
                 eachMessage[0] = (byte) (1);
             }
             else{
                 eachMessage[0] = (byte) (0);
             }
-            eachMessage[1] = (byte) (numero_sequencia);
-            System.arraycopy(fileInBytes, start, eachMessage, 2, end-start);
+            eachMessage[1] = (byte) (numero_sequencia & 0xFF);
+            eachMessage[2] = (byte) ((numero_sequencia >> 8) & 0xFF);
+            System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
             sendMessageToNodeInBytes(eachMessage,ipToSend);
+            cont ++;
         }
+        System.out.println("Packets sent: "+ cont);
     }
+
+    
     public int cont=0;
     public void getFile(byte[] messageFragment){
-        byte[] file_info = new byte[messageFragment.length-2];
-        cont += file_info.length;
+        byte[] file_info = new byte[messageFragment.length-3];
+        cont++;
         int last_fragment = (messageFragment[0]);
-        int numero_sequencia = (messageFragment[1]);
+        int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
+        System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
 
-        System.arraycopy(messageFragment, 2, file_info, 0, file_info.length);
         try{
             outputStream.write(file_info);
             if (last_fragment == 1){
                 outputStream.close();
-                System.out.println(cont);
+                System.out.println("Packets received: "+ cont);
                 cont=0;
             }
         }
