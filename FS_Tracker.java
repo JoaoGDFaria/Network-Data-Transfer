@@ -1,96 +1,159 @@
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * CLASS HANDLER - Trata de pedidos de um cliente
+ */
+class Handler extends Thread{
+    private Socket socket;                   // Conecção entre cliente e servidor
+    private BufferedWriter bufferedToNode;   // Escrever informação enviada para o cliente
+    private BufferedReader bufferedFromNode; // Ler informação enviada pelo cliente
+    private FS_Tracker tracker;
+    private String ipAddress;
+
+    public Handler(Socket socket, FS_Tracker tracker) throws IOException{
+        this.socket = socket;
+        this.bufferedToNode = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
+        this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
+        this.tracker = tracker;
+        String messageReceived = bufferedFromNode.readLine();
+        this.ipAddress = tracker.ipAdressNode(messageReceived);
+
+        System.out.println("Node " + ipAddress + " is connected.");
+        //System.out.println(messageReceived);  // COLOCAR ATIVO PARA DEMONSTRAR
+        tracker.messageParser(messageReceived);
+    }
+
+    public void run(){
+        try{
+            while(socket.isConnected()){
+                String req = bufferedFromNode.readLine();
+
+                if(req == null){
+                    bufferedFromNode.close();
+                    bufferedToNode.close();
+                    socket.close();
+                    break;
+                }
+
+                // Disconnect node from FSTracker
+                if (req.charAt(0) == 'd'){
+                    this.tracker.deleteDisconnectedNode(this.ipAddress);
+                    break;
+                }
+                else{
+                    if (req.charAt(0) == 'i'){
+                        this.tracker.memoryToString();
+                        System.out.println("##############");
+                        this.tracker.timeToString();
+                        System.out.println("##############");
+                        System.out.println("##############");
+                        System.out.println("##############\n");
+                    }else if (req.length() >= 5 && req.startsWith("GET ")){
+                        String messageToNode = this.tracker.pickFile(req.substring(4), bufferedToNode);
+                        this.tracker.sendInfoToNode(messageToNode,bufferedToNode);
+                    }else{
+                        this.tracker.messageParser(req);
+                        //System.out.println(req);  // COLOCAR ATIVO PARA DEMONSTRAR
+                    }
+                    //System.out.println(req); 
+                }
+
+            }
+        }catch(IOException e){
+            System.out.println("ERRO HANDLER: " + e.getMessage());
+        }
+    }
+}
+
+/**
+ * CLASS FS_TRACKER - Servidor tracker
+ */
 public class FS_Tracker {
+
     private Map<String, Map<Integer, List<String>>> fileMemory;
     private Map<String, String> defragmentMessages;
     private Map<String, LocalTime> timeStamps;
 
-    private ReadWriteLock lock = new ReentrantReadWriteLock();
-    Lock writelock = lock.writeLock();
-    Lock readlock = lock.readLock();
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    public FS_Tracker(ServerSocket trackerSocket){
+    public FS_Tracker(){
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
         this.defragmentMessages = new HashMap<>();
     }
 
+    private void startFS_Tracker(Integer port) throws IOException {
+        ServerSocket tracker_socket = new ServerSocket(port);
+        System.out.println("Servidor ativo em 10.0.0.10 porta " + tracker_socket.getLocalPort() + ".\n");
 
-    private void startFS_Tracker(ServerSocket trackerSocket) throws IOException {
-        System.out.println("Servidor ativo em 10.0.0.10 porta " + trackerSocket.getLocalPort() + ".\n");
         checkAlive();
-        while (!trackerSocket.isClosed()) {
-               
-            Socket socket = trackerSocket.accept();
-            NodeHandler nodeHandler = new NodeHandler(socket, this);
-            
 
-            Thread newThread = new Thread(nodeHandler);
-            newThread.start();
+        while (!tracker_socket.isClosed()) {
+            new Handler(tracker_socket.accept(), this).start();
         }
     }
 
-    // LOCKS WRITE E READ   FALTAAAAAAAAAAAAAAA
-    public void insertInfo(String fileName, Integer blockNumber, String ipNode){
-        insertTimeStamps(LocalTime.now(), ipNode);
-        if (fileName.equals("null")){
-            return;
-        }
+    public void checkAlive(){
+        new Thread(() -> {
+            Timer timer = new Timer();
 
-        if (!fileMemory.containsKey(fileName)) fileMemory.put(fileName, new HashMap<>());
-        Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    verifyTimeStamp();
+                }
+            };
 
-        if (!blockMap.containsKey(blockNumber)) blockMap.put(blockNumber, new ArrayList<>());
-        List<String> ipList = blockMap.get(blockNumber);
-
-        if (!ipList.contains(ipNode)){
-            ipList.add(ipNode);
-            blockMap.put(blockNumber, ipList);
-            fileMemory.put(fileName, blockMap);
-        }
+            timer.scheduleAtFixedRate(task, 3000, 3000);
+        }).start();
     }
 
-    // LOCKS WRITE
     public void insertTimeStamps(LocalTime time, String ipNode){
-        //writelock.lock();
         try{
-           this.timeStamps.put(ipNode, time);  
+            lock.writeLock().lock();
+            this.timeStamps.put(ipNode, time);
+        }finally{
+            lock.writeLock().unlock();
         }
-        finally{
-            //writelock.lock();
-        }
-        
     }
 
-    // LOCKS WRITE E READ FALTAAAAAAAAAAAAAAAAAAa
-    public void sendIPBack(String fileName, Integer blockNumber){
+    public void verifyTimeStamp(){
+        try{
+            lock.writeLock().lock();
+            LocalTime now = LocalTime.now();
+            Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
 
-        Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
-        List<String> IPs = blockMap.get(blockNumber);
+            while (iterator.hasNext()) {
+                Map.Entry<String, LocalTime> entry = iterator.next();
+                LocalTime before = entry.getValue();
+                Duration duration = Duration.between(before, now);
+                long secondsDifference = duration.getSeconds();
 
-        if(IPs.size()>1) {
-            String used = IPs.get(0);
-            IPs.remove(0);
-            IPs.add(used);
+                if (secondsDifference >= 3) {
+                    iterator.remove();
+                    deleteDisconnectedNode(entry.getKey());
+                }
+            }
+        }finally{
+            lock.writeLock().unlock();
         }
-
-        blockMap.put(blockNumber, IPs);
-        fileMemory.put(fileName, blockMap);
     }
 
-    // LOCKS WRITE FALTAAAAAAAAAAAAAAAAAAA
     public void deleteDisconnectedNode(String ipDisc){
-        //writelock.lock();
         try{
+            lock.writeLock().lock();
+
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
                 Map<Integer, List<String>> blockMap = entry.getValue();
 
@@ -99,29 +162,54 @@ public class FS_Tracker {
                     ipList.remove(ipDisc);
                 }
             }
-            this.timeStamps.remove(ipDisc);
+            timeStamps.remove(ipDisc);
+        }finally{
+            lock.writeLock().unlock();
+            System.out.println("Node " + ipDisc + " has been disconnected");
         }
-        finally{
-          //writelock.unlock();  
-        }
-        System.out.println("Node " + ipDisc + " has been disconnected");
     }
 
-    // LOCKS READ WRITE FALTAAAAAAAAAAAAAAAA
-    public void verifyTimeStamp(){
-        LocalTime now = LocalTime.now();
-        Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
+    public void insertInfo(String fileName, Integer blockNumber, String ipNode){
+        insertTimeStamps(LocalTime.now(), ipNode);
 
-        while (iterator.hasNext()) {
-            Map.Entry<String, LocalTime> entry = iterator.next();
-            LocalTime before = entry.getValue();
-            Duration duration = Duration.between(before, now);
-            long secondsDifference = duration.getSeconds();
+        if (fileName.equals("null")){
+            return;
+        }
 
-            if (secondsDifference >= 3) {
-                iterator.remove();
-                deleteDisconnectedNode(entry.getKey());
+        try{
+            lock.writeLock().lock();
+            if (!fileMemory.containsKey(fileName)) fileMemory.put(fileName, new HashMap<>());
+            Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
+
+            if (!blockMap.containsKey(blockNumber)) blockMap.put(blockNumber, new ArrayList<>());
+            List<String> ipList = blockMap.get(blockNumber);
+
+            if (!ipList.contains(ipNode)){
+                ipList.add(ipNode);
+                blockMap.put(blockNumber, ipList);
+                fileMemory.put(fileName, blockMap);
             }
+        }finally{
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void sendIPBack(String fileName, Integer blockNumber){
+        try{
+            lock.readLock().lock();
+            Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
+            List<String> IPs = blockMap.get(blockNumber);
+
+            if(IPs.size()>1) {
+                String used = IPs.get(0);
+                IPs.remove(0);
+                IPs.add(used);
+            }
+
+            blockMap.put(blockNumber, IPs);
+            fileMemory.put(fileName, blockMap);
+        }finally{
+            lock.readLock().unlock();
         }
     }
 
@@ -138,7 +226,6 @@ public class FS_Tracker {
         return ipNode;
     }
 
-    // LOCKS READ AND WRITE FALTAAAAAAAAAAA
     // Recebe a mensagem do cliente
     public void messageParser(String mensagem){
         String ipNode = "";
@@ -214,48 +301,49 @@ public class FS_Tracker {
         }
     }
 
-    // LOCKS READ AND WRITE FALTAAAAAAAAAa
     public void defragmentationFromNode(String ipNode, String payload, String fragInfo){
+        try{
+            lock.writeLock().lock();
+            if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
+            String blocksIP = this.defragmentMessages.get(ipNode);
 
-        if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
-        String blocksIP = this.defragmentMessages.get(ipNode);
+            blocksIP+=payload;
 
-        blocksIP+=payload;
+            this.defragmentMessages.put(ipNode, blocksIP);
 
-        this.defragmentMessages.put(ipNode, blocksIP);
-
-        if (Integer.parseInt(fragInfo) == 3){
-            String finalMessage = this.defragmentMessages.get(ipNode);
-            this.defragmentMessages.remove(ipNode);
-            messageParser(ipNode + "|1|" +finalMessage);
+            if (Integer.parseInt(fragInfo) == 3){
+                String finalMessage = this.defragmentMessages.get(ipNode);
+                this.defragmentMessages.remove(ipNode);
+                messageParser(ipNode + "|1|" +finalMessage);
+            }
+        }finally{
+            lock.writeLock().unlock();
         }
-        
     }
 
-    // LOCKS READ
     public String pickFile(String fileName, BufferedWriter bufferedToNode) throws IOException{
-        //readlock.lock();
+        lock.readLock().lock();
         String messageToSend = "";
-        try{    
+        try{
             Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
+
             if (blockMap == null){
                 bufferedToNode.write("File " + fileName + " was not found!");
                 bufferedToNode.newLine();
                 bufferedToNode.flush();
                 return "ERROR";
             } 
+
             for (Map.Entry<Integer, List<String>> entry : blockMap.entrySet()){
                 int blockNumber = entry.getKey();
                 List<String> ipAddr = entry.getValue();
 
                 if (!ipAddr.isEmpty()){
                     messageToSend += blockNumber + ":" + String.join(",", ipAddr) + ";";
-                    }
                 }
-        }catch(Exception e){
-            System.out.println(e.getMessage());
+            }
         }finally{
-            //readlock.unlock();
+            lock.readLock().unlock();
         }
         return messageToSend;
     }
@@ -300,11 +388,9 @@ public class FS_Tracker {
         }
     }
 
-
-    // LOCKS READ 
     public void memoryToString() {
-        //readlock.lock();
         try{
+            lock.readLock().lock();
             StringBuilder result = new StringBuilder();
 
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()) {
@@ -325,14 +411,13 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            //readlock.unlock();
+            lock.readLock().unlock();
         }
     }
 
-    // LOCKS READ 
     public void timeToString(){
-        //readlock.lock();
         try{
+            lock.readLock().lock();
             StringBuilder result = new StringBuilder();
 
             for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
@@ -347,30 +432,12 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            //readlock.unlock();
+            lock.readLock().unlock();
         }
     }
 
-
-    public void checkAlive(){
-        new Thread(() -> {
-            Timer timer = new Timer();
-
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    verifyTimeStamp();
-                }
-            };
-
-            timer.scheduleAtFixedRate(task, 3000, 3000);
-        }).start();
-    }
-
-    public static void main (String[] args) throws IOException{
-
-        ServerSocket trackerSocket = new ServerSocket(9090);
-        FS_Tracker fs = new FS_Tracker(trackerSocket);
-        fs.startFS_Tracker(trackerSocket);
+    public static void main(String args[]) throws IOException{
+        FS_Tracker tracker = new FS_Tracker();
+        tracker.startFS_Tracker(9090);
     }
 }
