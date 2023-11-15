@@ -457,26 +457,42 @@ public class Node {
         System.out.println("Packets sent: "+ cont);
     }
 
-    
+    public int n_sequencia_esperado = 1;
     public int cont=0;
+
     public void getFile(byte[] messageFragment){
         byte[] file_info = new byte[messageFragment.length-3];
         cont++;
         int last_fragment = (messageFragment[0]);
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
-        System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
 
-        try{
-            outputStream.write(file_info);
-            if (last_fragment == 1){
-                outputStream.close();
-                System.out.println("Packets received: "+ cont);
-                cont=0;
+        // Se o número de sequencia for o esperado, tudo corre bem
+        if (numero_sequencia == n_sequencia_esperado){
+            System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
+
+            try{
+                outputStream.write(file_info);
+                if (last_fragment == 1){
+                    outputStream.close();
+                    System.out.println("Packets received: "+ cont);
+                    cont=0;
+                }
+                sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
+                n_sequencia_esperado++;
+            }
+            catch (IOException e){
+                e.printStackTrace();
+            }
+
+        }
+        else{
+            try{
+                sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
+            } catch (IOException e){
+                e.printStackTrace();
             }
         }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+
     }
 
     
@@ -504,6 +520,9 @@ public class Node {
                             System.out.println("Received FileName: " + responsenFromNode.substring(2));
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + responsenFromNode.substring(2));
                             outputStream = new FileOutputStream(file);
+                        }
+                        else if (responsenFromNode.startsWith("ACK")){
+                            System.out.println(responsenFromNode);
                         }
                         // Fragmented messages
                         else{
