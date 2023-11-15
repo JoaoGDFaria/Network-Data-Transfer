@@ -27,6 +27,15 @@ public class Node {
     private FileOutputStream outputStream;
 
 
+
+
+    // Para UDP
+
+    private File infoFile;
+    private Path path;
+    private byte[] fileInBytes = null;
+
+
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
         this.ipNode = ip;
         this.defragmentMessages = "";
@@ -406,76 +415,90 @@ public class Node {
     }
 
 
-
-    public void sendFiles(String filename, String ipToSend) throws IOException{
-        File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
-        Path path = infoFile.toPath();
-        byte[] fileInBytes = null;
-        int numero_sequencia = 0;
-        int cont = 0;
+    public void sendFirstFragment(String filename, String ipToSend) throws IOException{
+        infoFile = new File(this.pathToFiles+"/"+filename); // File to send
+        path = infoFile.toPath();
         try{
-            fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
+            fileInBytes = Files.readAllBytes(path);     // Convert file in bytes
         }
         catch (IOException e){
             e.printStackTrace();
         }
 
         sendMessageToNode("F|"+filename, ipToSend);
+        sendFragment("KaiCenat_blocoab","10.0.2.20",1);
+    }
 
+
+
+    public void sendFragment(String filename, String ipToSend, int fragmentNumber) throws IOException{
         int maxPacketSize = 1021;
 
         int totalBytes = fileInBytes.length;
-
         int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+
+        if (fragmentNumber > totalFragments){
+            return;
+        }
 
         boolean isLastFragment = false;
 
-        for (int i = 1; i <= totalFragments; i++){
-            int start = (i - 1) * maxPacketSize;
-            int end = i * maxPacketSize;
-            numero_sequencia++;
-            
+        int start = (fragmentNumber - 1) * maxPacketSize;
+        int end = fragmentNumber * maxPacketSize;
 
-            // Mensagem com fragmentação (É a última)
-            if (end > totalBytes) {
-                end = totalBytes;
-                isLastFragment = true;
-            }
-            byte[] eachMessage = new byte[end-start+3];
-            if (isLastFragment){
-                eachMessage[0] = (byte) (1);
-            }
-            else{
-                eachMessage[0] = (byte) (0);
-            }
-            eachMessage[1] = (byte) (numero_sequencia & 0xFF);
-            eachMessage[2] = (byte) ((numero_sequencia >> 8) & 0xFF);
-            System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
-            sendMessageToNodeInBytes(eachMessage,ipToSend);
-            cont ++;
+        // Mensagem com fragmentação (É a última)
+        if (end > totalBytes) {
+            end = totalBytes;
+            isLastFragment = true;
         }
-        System.out.println("Packets sent: "+ cont);
+        byte[] eachMessage = new byte[end-start+3];
+        if (isLastFragment){
+            eachMessage[0] = (byte) (1);
+        }
+        else{
+            eachMessage[0] = (byte) (0);
+        }
+        eachMessage[1] = (byte) (fragmentNumber & 0xFF);
+        eachMessage[2] = (byte) ((fragmentNumber >> 8) & 0xFF);
+        System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
+        sendMessageToNodeInBytes(eachMessage,ipToSend);
     }
+
+
 
     public int n_sequencia_esperado = 1;
     public int cont=0;
 
     public void getFile(byte[] messageFragment){
-        byte[] file_info = new byte[messageFragment.length-3];
         cont++;
         int last_fragment = (messageFragment[0]);
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
 
         // Se o número de sequencia for o esperado, tudo corre bem
         if (numero_sequencia == n_sequencia_esperado){
-            System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
 
             try{
-                outputStream.write(file_info);
                 if (last_fragment == 1){
+                    int size = 0;
+                    for (byte b : messageFragment){
+                        if(b == 0){
+                            break;
+                        }
+                        size++;
+                    }
+
+                    byte[] file_info = new byte[size-3];
+                    System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
+                    outputStream.write(file_info);
+
                     outputStream.close();
                     System.out.println("Packets received: "+ cont);
                     cont=0;
+                }
+                else{
+                    byte[] file_info = new byte[messageFragment.length-3];
+                    System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
+                    outputStream.write(file_info);
                 }
                 sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
                 n_sequencia_esperado++;
@@ -513,7 +536,7 @@ public class Node {
                         // First message
                         if (responsenFromNode.startsWith("0|")){
                             System.out.println("Received: " + responsenFromNode);
-                            sendFiles("KaiCenat_blocoab","10.0.2.20");
+                            sendFirstFragment("KaiCenat_blocoab","10.0.2.20");
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
@@ -523,6 +546,7 @@ public class Node {
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             System.out.println(responsenFromNode);
+                            sendFragment("KaiCenat_blocoab","10.0.2.20",Integer.parseInt(responsenFromNode.substring(3))+1);
                         }
                         // Fragmented messages
                         else{
@@ -540,7 +564,7 @@ public class Node {
 
                     }
                     catch (Exception e) {
-                        System.out.println(e.getMessage());
+                        e.printStackTrace();
                     }
                 }
             }
@@ -668,3 +692,75 @@ public class Node {
 
 // 1 byte para numero de sequencia é suficiente?
 // 1024 bytes por cada fragmento é suficiente?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * 
+ * 
+ * public void sendFiles(String filename, String ipToSend) throws IOException{
+        File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
+        Path path = infoFile.toPath();
+        byte[] fileInBytes = null;
+        int numero_sequencia = 0;
+        int cont = 0;
+        try{
+            fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        sendMessageToNode("F|"+filename, ipToSend);
+
+        int maxPacketSize = 1021;
+
+        int totalBytes = fileInBytes.length;
+
+        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+
+        boolean isLastFragment = false;
+
+        for (int i = 1; i <= totalFragments; i++){
+            int start = (i - 1) * maxPacketSize;
+            int end = i * maxPacketSize;
+            numero_sequencia++;
+            
+
+            // Mensagem com fragmentação (É a última)
+            if (end > totalBytes) {
+                end = totalBytes;
+                isLastFragment = true;
+            }
+            byte[] eachMessage = new byte[end-start+3];
+            if (isLastFragment){
+                eachMessage[0] = (byte) (1);
+            }
+            else{
+                eachMessage[0] = (byte) (0);
+            }
+            eachMessage[1] = (byte) (numero_sequencia & 0xFF);
+            eachMessage[2] = (byte) ((numero_sequencia >> 8) & 0xFF);
+            System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
+            sendMessageToNodeInBytes(eachMessage,ipToSend);
+            cont ++;
+        }
+        System.out.println("Packets sent: "+ cont);
+    }
+
+ * 
+ * 
+ */
