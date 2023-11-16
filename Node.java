@@ -661,16 +661,16 @@ public class Node {
 
         String pathToFiles;
         if (ipNode.equals("10.0.1.20")){
-            pathToFiles = "/home/core/Desktop/cc/Node1";
+            pathToFiles = "/home/core/Desktop/Projeto/Node1";
         }
         else if (ipNode.equals("10.0.2.20")){
-            pathToFiles = "/home/core/Desktop/cc/Node2";
+            pathToFiles = "/home/core/Desktop/Projeto/Node2";
         }
         else if (ipNode.equals("10.0.3.20")){
-            pathToFiles = "/home/core/Desktop/cc/Node3";
+            pathToFiles = "/home/core/Desktop/Projeto/Node3";
         }
         else{
-            pathToFiles = "/home/core/Desktop/cc/Node4";
+            pathToFiles = "/home/core/Desktop/Projeto/Node4";
         }
 
 
