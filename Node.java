@@ -27,14 +27,14 @@ public class Node {
     private FileOutputStream outputStream;
 
 
-
-
     // Para UDP
 
     private File infoFile;
     private Path path;
     private byte[] fileInBytes;
     private int totalSize = 0;
+
+    private Timer timerACK = new Timer();
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -506,7 +506,7 @@ public class Node {
         }
         else{
             try{
-                sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
+                sendMessageToNode("ACK"+(n_sequencia_esperado-1), "10.0.1.20");
             } catch (IOException e){
                 e.printStackTrace();
             }
@@ -543,8 +543,13 @@ public class Node {
                             outputStream = new FileOutputStream(file);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
+                            if (timerACK != null) {
+                                timerACK.cancel();
+                                timerACK.purge();
+                            }
                             System.out.println(responsenFromNode);
                             sendFragment("KaiCenat_blocoab","10.0.2.20",Integer.parseInt(responsenFromNode.substring(3))+1);
+                            timerACK("KaiCenat_blocoab","10.0.2.20",Integer.parseInt(responsenFromNode.substring(3))+1);
                         }
                         // Fragmented messages
                         else{
@@ -589,6 +594,25 @@ public class Node {
         clientSocket.send(p);
         clientSocket.close();
         //timeProgression(messageToSend, ipToSend, ack_atual);
+    }
+
+
+
+    public void timerACK(String filename, String ipToSend, int fragmentNumber){
+        timerACK.cancel();
+        timerACK.purge();
+        timerACK = new Timer();
+        timerACK.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    sendFragment(filename,ipToSend,fragmentNumber);
+                    System.out.println(filename+"+"+ipToSend+"+"+fragmentNumber);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 100);
     }
 
 
