@@ -37,7 +37,7 @@ public class FS_Tracker {
         checkAlive();
 
         while (!tracker_socket.isClosed()) {
-            new Node_Handler(tracker_socket.accept(), this).start();
+            new NodeHandler(tracker_socket.accept(), this).start();
         }
     }
 

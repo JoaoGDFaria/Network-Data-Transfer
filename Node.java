@@ -332,6 +332,7 @@ public class Node {
         }
         finally{
             System.out.println("Disconnected Sucessfully");   
+            System.exit(0);
         }
         
     }
@@ -484,7 +485,6 @@ public class Node {
                     byte[] file_info = new byte[size];
                     System.arraycopy(messageFragment, 3, file_info, 0, size);
                     outputStream.write(file_info);
-
                     outputStream.close();
                     System.out.println("Packets received: "+ cont);
                     cont=0;
@@ -506,7 +506,7 @@ public class Node {
             try{
                 sendMessageToNode("ACK"+(n_sequencia_esperado-1), "10.0.1.20");
             } catch (IOException e){
-                e.printStackTrace();
+                
             }
         }
 
@@ -546,8 +546,9 @@ public class Node {
                                 timerACK.purge();
                             }
                             System.out.println(responsenFromNode);
-                            sendFragment("KaiCenat_blocoab","10.0.2.20",Integer.parseInt(responsenFromNode.substring(3))+1);
-                            timerACK("KaiCenat_blocoab","10.0.2.20",Integer.parseInt(responsenFromNode.substring(3))+1);
+                            int ack_num = Integer.parseInt(responsenFromNode.substring(3));
+                            sendFragment("KaiCenat_blocoab","10.0.2.20",ack_num+1);
+                            if (ack_num != 1028) timerACK("KaiCenat_blocoab","10.0.2.20",ack_num+1);
                         }
                         // Fragmented messages
                         else{
@@ -565,9 +566,7 @@ public class Node {
 
                     }
                     catch (Exception e) {
-                        if(!killNode){
-                            System.out.println("ListenMessageFromTracker ERRO: " + e.getMessage());
-                        }
+                        e.printStackTrace();
                     }
                 }
             }
@@ -612,7 +611,7 @@ public class Node {
                     e.printStackTrace();
                 }
             }
-        }, 0, 100);
+        }, 50, 50);
     }
 
 
@@ -702,8 +701,10 @@ public class Node {
         Node node = new Node(ipNode, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
-
+        
         node.listenMessageFromNode();
+    
+        
     }
 
 }
