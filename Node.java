@@ -68,7 +68,7 @@ public class Node {
         String previousFileName = "";
         File infoFile = new File(this.pathToFiles);
         File[] allFiles = infoFile.listFiles();
-        Arrays.sort(allFiles);
+        //Arrays.sort(allFiles);
         for (File file : allFiles){
             String fName = file.getName();
             String fileName = fName.substring(0, fName.length()-8);
@@ -182,7 +182,7 @@ public class Node {
                         bufferedToTracker.write(messageToSend);
                         bufferedToTracker.newLine();
                         bufferedToTracker.flush();
-                        disconnectNode();  
+                        disconnectNode();
                     }
                     catch (IOException e) {
                         System.out.println(e.getMessage());
@@ -207,6 +207,22 @@ public class Node {
         }).start();
     }
 
+    public void listenMessageFromTracker() {
+        new Thread(() -> {
+            String msgFromChat;
+
+            while (socketTCP.isConnected() && !killNode) {
+                try {
+                    msgFromChat = bufferedFromTracker.readLine();
+                    defragmentationFromFSTracker(msgFromChat);
+                } catch (IOException e) {
+                    if(!killNode){
+                        System.out.println("ListenMessageFromTracker ERRO: " + e.getMessage());
+                    }
+                }
+            }
+        }).start();
+    }
 
     public void defragmentationFromFSTracker(String message){
         if (message.startsWith("File")){
@@ -301,16 +317,16 @@ public class Node {
                 bufferedFromTracker.close();
             }
             if (socketTCP != null){
-                this.socketTCP.close();  
+                socketTCP.close();  
             }
             if (socketUDP != null){
-                this.socketUDP.close();  
+                socketUDP.close();  
             }
             if (timer != null) {
                 timer.cancel();
                 timer.purge();
             }
-                    
+
         } catch (IOException a){
             System.out.println("ERROR CLOSING NODE");
         }
@@ -318,24 +334,6 @@ public class Node {
             System.out.println("Disconnected Sucessfully");   
         }
         
-    }
-
-    public void listenMessageFromTracker() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String msgFromChat;
-
-                while (socketTCP.isConnected() && !killNode) {
-                    try {
-                        msgFromChat = bufferedFromTracker.readLine();
-                        defragmentationFromFSTracker(msgFromChat);
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-            }
-        }).start();
     }
 
 
@@ -567,7 +565,9 @@ public class Node {
 
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        if(!killNode){
+                            System.out.println("ListenMessageFromTracker ERRO: " + e.getMessage());
+                        }
                     }
                 }
             }
@@ -702,10 +702,8 @@ public class Node {
         Node node = new Node(ipNode, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
-        
+
         node.listenMessageFromNode();
-    
-        
     }
 
 }
