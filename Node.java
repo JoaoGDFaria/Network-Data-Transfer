@@ -30,11 +30,11 @@ public class Node {
     // Para UDP
 
     private File infoFile;
-    private Path path;
     private byte[] fileInBytes;
     private int totalSize = 0;
-    private int fragmentoAtual = 1;
+    private int fragmentoAtual = -1;
     boolean isOver = false;
+    boolean hasStarted = false;
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -404,11 +404,31 @@ public class Node {
             String values = entry.getValue();
             try{
                 sendMessageToNode("0|"+ipNode+"|"+values, key);
-                break; // TO REMOVE LATER
             }
             catch (Exception e){
                 System.out.println(e.getMessage());
             }
+
+
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if(!hasStarted){
+                    try {
+                        sendMessageToNode("0|"+ipNode+"|"+values, key);
+                        System.out.println("Resending Asking For file");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    break;
+                }
+            }
+            break; // TO REMOVE LATER
             
         }
     }
@@ -433,6 +453,25 @@ public class Node {
                 e.printStackTrace();
             }
 
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if(fragmentoAtual!=1){
+                    try {
+                        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
+                        System.out.println("Resending ..... ACK -> "+ 0);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    break;
+                }
+            }
+
 
             int maxPacketSize = 1021;
             int totalBytes = fileInBytes.length;
@@ -440,12 +479,6 @@ public class Node {
             boolean isLastFragment = false;
 
             for (int i = 1; i <= totalFragments; i++){
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
                 int start = (i - 1) * maxPacketSize;
                 int end = i * maxPacketSize;
                 
@@ -476,7 +509,7 @@ public class Node {
 
                 while (true) {
                     try {
-                        Thread.sleep(5);
+                        Thread.sleep(2);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -567,11 +600,13 @@ public class Node {
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
+                            hasStarted=true;
                             String[] split = responsenFromNode.split("\\|");
                             System.out.println("Received FileName: " + split[1]);
                             totalSize = Integer.parseInt(split[2]);
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
                             outputStream = new FileOutputStream(file);
+                            sendMessageToNode("ACK0", "10.0.1.20");
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             int ack_num = Integer.parseInt(responsenFromNode.substring(3));
@@ -579,6 +614,7 @@ public class Node {
                             //System.out.println("Node 1: " + responsenFromNode);
                         }
                         else if (responsenFromNode.startsWith("FIN")){
+                            hasStarted=false;
                             //System.out.println(responsenFromNode);
                             isOver = true;
                         }
@@ -602,7 +638,7 @@ public class Node {
         DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
         clientSocket.send(p);
         clientSocket.close();
-        //System.out.println("Sent: "+messageToSend);
+        System.out.println("Sent: "+messageToSend);
         //timeProgression(messageToSend, ipToSend, ack_atual);
     }
 
