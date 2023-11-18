@@ -488,13 +488,14 @@ public class Node {
                     outputStream.close();
                     System.out.println("Packets received: "+ cont);
                     cont=0;
+                    sendMessageToNode("FIN", "10.0.1.20");
                 }
                 else{
                     byte[] file_info = new byte[messageFragment.length-3];
                     System.arraycopy(messageFragment, 3, file_info, 0, file_info.length);
                     outputStream.write(file_info);
+                    sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
                 }
-                sendMessageToNode("ACK"+n_sequencia_esperado, "10.0.1.20");
                 n_sequencia_esperado++;
             }
             catch (IOException e){
@@ -520,6 +521,7 @@ public class Node {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                boolean isOver = false;
                 while (socketTCP.isConnected() && !killNode) {
                     try {
                         byte[] receiveData = new byte[1024];
@@ -540,7 +542,7 @@ public class Node {
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
                             outputStream = new FileOutputStream(file);
                         }
-                        else if (responsenFromNode.startsWith("ACK")){
+                        else if (responsenFromNode.startsWith("ACK") && !isOver){
                             if (timerACK != null) {
                                 timerACK.cancel();
                                 timerACK.purge();
@@ -548,22 +550,20 @@ public class Node {
                             System.out.println(responsenFromNode);
                             int ack_num = Integer.parseInt(responsenFromNode.substring(3));
                             sendFragment("KaiCenat_blocoab","10.0.2.20",ack_num+1);
-                            if (ack_num != 1028) timerACK("KaiCenat_blocoab","10.0.2.20",ack_num+1);
+                            timerACK("KaiCenat_blocoab","10.0.2.20",ack_num+1);
+                        }
+                        else if (responsenFromNode.startsWith("FIN")){
+                            if (timerACK != null) {
+                                timerACK.cancel();
+                                timerACK.purge();
+                            }
+                            System.out.println(responsenFromNode);
+                            isOver = true;
                         }
                         // Fragmented messages
                         else{
                             getFile(receivePacket.getData());
                         }
-
-                        //String[] parts = responsenFromNode.split("\\|");
-
-                        //if (responsenFromNode.startsWith("ACK")){
-                        //    // IP que recebeu a mensagem - ACK da mensagem
-                        //    infoProgression.put(parts[1], Integer.parseInt(parts[0]));
-                        //}
-                        //sendMessageToNode("ACK"+parts[0]+"|"+ipNode,parts[1],0);
-                        
-
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -614,36 +614,6 @@ public class Node {
         }, 50, 50);
     }
 
-
-//    public void timeProgression(String messageToSend, String ip, int ack_atual){
-//        new Thread(() -> {
-//            Timer timer = new Timer();
-//
-//            TimerTask task = new TimerTask() {
-//                @Override
-//                public void run() {
-//                    if (infoProgression.containsKey(ip)) {
-//                        int ultimo_ack = infoProgression.get(ip);
-//                        if (ack_atual < ultimo_ack){
-//                            try {
-//                                System.out.println("CHAMEI NOVAMENTE");
-//                                sendMessageToNode(messageToSend,ip,ack_atual);
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                    else{
-//                        System.out.println("nao cHEGEUI AGUIO   "+ip+"    "+ack_atual);
-//                    }
-//                    timer.cancel();
-//                }
-//            };
-//
-//            timer.schedule(task, 500);
-//        }).start();
-//    }
-    
 
 
 
@@ -708,80 +678,3 @@ public class Node {
     }
 
 }
-
-
-
-// 1 byte para numero de sequencia é suficiente?
-// 1024 bytes por cada fragmento é suficiente?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
- * 
- * 
- * public void sendFiles(String filename, String ipToSend) throws IOException{
-        File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
-        Path path = infoFile.toPath();
-        byte[] fileInBytes = null;
-        int numero_sequencia = 0;
-        int cont = 0;
-        try{
-            fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
-        sendMessageToNode("F|"+filename, ipToSend);
-
-        int maxPacketSize = 1021;
-
-        int totalBytes = fileInBytes.length;
-
-        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
-
-        boolean isLastFragment = false;
-
-        for (int i = 1; i <= totalFragments; i++){
-            int start = (i - 1) * maxPacketSize;
-            int end = i * maxPacketSize;
-            numero_sequencia++;
-            
-
-            // Mensagem com fragmentação (É a última)
-            if (end > totalBytes) {
-                end = totalBytes;
-                isLastFragment = true;
-            }
-            byte[] eachMessage = new byte[end-start+3];
-            if (isLastFragment){
-                eachMessage[0] = (byte) (1);
-            }
-            else{
-                eachMessage[0] = (byte) (0);
-            }
-            eachMessage[1] = (byte) (numero_sequencia & 0xFF);
-            eachMessage[2] = (byte) ((numero_sequencia >> 8) & 0xFF);
-            System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
-            sendMessageToNodeInBytes(eachMessage,ipToSend);
-            cont ++;
-        }
-        System.out.println("Packets sent: "+ cont);
-    }
-
- * 
- * 
- */
