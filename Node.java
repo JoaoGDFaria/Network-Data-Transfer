@@ -33,8 +33,8 @@ public class Node {
     private Path path;
     private byte[] fileInBytes;
     private int totalSize = 0;
-
-    private Timer timerACK = new Timer();
+    private int fragmentoAtual = 1;
+    boolean isOver = false;
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -390,8 +390,6 @@ public class Node {
             if (!allValues.contains(ipNode)){
                 if (!messages.containsKey(key)) {
                     messages.put(key, value);
-                    // IP que recebeu a mensagem - ACK da mensagem
-                    //infoProgression.put(key, -1);
                 }
                 else{
                     String aux = messages.get(key)+","+value;
@@ -416,53 +414,86 @@ public class Node {
     }
 
 
-    public void sendFirstFragment(String filename, String ipToSend) throws IOException{
-        infoFile = new File(this.pathToFiles+"/"+filename); // File to send
-        path = infoFile.toPath();
-        try{
-            fileInBytes = Files.readAllBytes(path);     // Convert file in bytes
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
-        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
-        sendFragment("KaiCenat_blocoab","10.0.2.20",1);
-    }
 
 
+    public void sendFiles(String filename, String ipToSend){
+        new Thread(() -> {
+            infoFile = new File(this.pathToFiles+"/"+filename); // File to send
+            Path path = infoFile.toPath();
+            try{
+                fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
+            }
+            catch (IOException e){
+                e.printStackTrace();
+            }
 
-    public void sendFragment(String filename, String ipToSend, int fragmentNumber) throws IOException{
-        int maxPacketSize = 1021;
+            try {
+                sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-        int totalBytes = fileInBytes.length;
-        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
 
-        if (fragmentNumber > totalFragments){
-            return;
-        }
+            int maxPacketSize = 1021;
+            int totalBytes = fileInBytes.length;
+            int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+            boolean isLastFragment = false;
 
-        boolean isLastFragment = false;
+            for (int i = 1; i <= totalFragments; i++){
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                int start = (i - 1) * maxPacketSize;
+                int end = i * maxPacketSize;
+                
 
-        int start = (fragmentNumber - 1) * maxPacketSize;
-        int end = fragmentNumber * maxPacketSize;
+                // Mensagem com fragmentação (É a última)
+                if (end > totalBytes) {
+                    end = totalBytes;
+                    isLastFragment = true;
+                }
+                byte[] eachMessage = new byte[end-start+3];
+                if (isLastFragment){
+                    eachMessage[0] = (byte) (1);
+                }
+                else{
+                    eachMessage[0] = (byte) (0);
+                }
+                eachMessage[1] = (byte) (i & 0xFF);
+                eachMessage[2] = (byte) ((i >> 8) & 0xFF);
+                System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
+                try {
+                    sendMessageToNodeInBytes(eachMessage,ipToSend);
+                    System.out.println("ACK -> "+ i);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-        // Mensagem com fragmentação (É a última)
-        if (end > totalBytes) {
-            end = totalBytes;
-            isLastFragment = true;
-        }
-        byte[] eachMessage = new byte[end-start+3];
-        if (isLastFragment){
-            eachMessage[0] = (byte) (1);
-        }
-        else{
-            eachMessage[0] = (byte) (0);
-        }
-        eachMessage[1] = (byte) (fragmentNumber & 0xFF);
-        eachMessage[2] = (byte) ((fragmentNumber >> 8) & 0xFF);
-        System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
-        sendMessageToNodeInBytes(eachMessage,ipToSend);
+
+
+                while (true) {
+                    try {
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if(!isOver && i+1!=fragmentoAtual){
+                        try {
+                            sendMessageToNodeInBytes(eachMessage,ipToSend);
+                            System.out.println("Resending ..... ACK -> "+ i);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                        break;
+                    }
+                }
+            }
+        }).start();
     }
 
 
@@ -521,7 +552,6 @@ public class Node {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                boolean isOver = false;
                 while (socketTCP.isConnected() && !killNode) {
                     try {
                         byte[] receiveData = new byte[1024];
@@ -531,8 +561,9 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
+                            isOver=false;
                             System.out.println("Received: " + responsenFromNode);
-                            sendFirstFragment("KaiCenat_blocoab","10.0.2.20");
+                            sendFiles("KaiCenat_blocoab","10.0.2.20");
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
@@ -542,22 +573,13 @@ public class Node {
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
                             outputStream = new FileOutputStream(file);
                         }
-                        else if (responsenFromNode.startsWith("ACK") && !isOver){
-                            if (timerACK != null) {
-                                timerACK.cancel();
-                                timerACK.purge();
-                            }
-                            System.out.println(responsenFromNode);
+                        else if (responsenFromNode.startsWith("ACK")){
                             int ack_num = Integer.parseInt(responsenFromNode.substring(3));
-                            sendFragment("KaiCenat_blocoab","10.0.2.20",ack_num+1);
-                            timerACK("KaiCenat_blocoab","10.0.2.20",ack_num+1);
+                            fragmentoAtual = ack_num+1;
+                            //System.out.println("Node 1: " + responsenFromNode);
                         }
                         else if (responsenFromNode.startsWith("FIN")){
-                            if (timerACK != null) {
-                                timerACK.cancel();
-                                timerACK.purge();
-                            }
-                            System.out.println(responsenFromNode);
+                            //System.out.println(responsenFromNode);
                             isOver = true;
                         }
                         // Fragmented messages
@@ -580,7 +602,7 @@ public class Node {
         DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
         clientSocket.send(p);
         clientSocket.close();
-        System.out.println("Sent: "+messageToSend);
+        //System.out.println("Sent: "+messageToSend);
         //timeProgression(messageToSend, ipToSend, ack_atual);
     }
 
@@ -595,24 +617,6 @@ public class Node {
         //timeProgression(messageToSend, ipToSend, ack_atual);
     }
 
-
-
-    public void timerACK(String filename, String ipToSend, int fragmentNumber){
-        timerACK.cancel();
-        timerACK.purge();
-        timerACK = new Timer();
-        timerACK.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    sendFragment(filename,ipToSend,fragmentNumber);
-                    System.out.println(filename+"+"+ipToSend+"+"+fragmentNumber);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 50, 50);
-    }
 
 
 
@@ -678,3 +682,74 @@ public class Node {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * 
+ * 
+ * 
+ * 
+    public void sendFirstFragment(String filename, String ipToSend) throws IOException{
+        infoFile = new File(this.pathToFiles+"/"+filename); // File to send
+        path = infoFile.toPath();
+        try{
+            fileInBytes = Files.readAllBytes(path);     // Convert file in bytes
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
+        sendFragment("KaiCenat_blocoab","10.0.2.20",1);
+    }
+
+
+
+    public void sendFragment(String filename, String ipToSend, int fragmentNumber) throws IOException{
+        int maxPacketSize = 1021;
+
+        int totalBytes = fileInBytes.length;
+        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+
+        if (fragmentNumber > totalFragments){
+            return;
+        }
+
+        boolean isLastFragment = false;
+
+        int start = (fragmentNumber - 1) * maxPacketSize;
+        int end = fragmentNumber * maxPacketSize;
+
+        // Mensagem com fragmentação (É a última)
+        if (end > totalBytes) {
+            end = totalBytes;
+            isLastFragment = true;
+        }
+        byte[] eachMessage = new byte[end-start+3];
+        if (isLastFragment){
+            eachMessage[0] = (byte) (1);
+        }
+        else{
+            eachMessage[0] = (byte) (0);
+        }
+        eachMessage[1] = (byte) (fragmentNumber & 0xFF);
+        eachMessage[2] = (byte) ((fragmentNumber >> 8) & 0xFF);
+        System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
+        sendMessageToNodeInBytes(eachMessage,ipToSend);
+    }
+ * 
+ */
