@@ -35,6 +35,8 @@ public class Node {
     private int fragmentoAtual = -1;
     boolean isOver = false;
     boolean hasStarted = false;
+    public int n_sequencia_esperado = 1;
+    public int cont=0;
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -398,7 +400,6 @@ public class Node {
             }
         
         }
-
         for (Map.Entry<String, String> entry : messages.entrySet()) {
             String key = entry.getKey();
             String values = entry.getValue();
@@ -428,6 +429,7 @@ public class Node {
                     break;
                 }
             }
+            hasStarted=false;
             break; // TO REMOVE LATER
             
         }
@@ -531,8 +533,6 @@ public class Node {
 
 
 
-    public int n_sequencia_esperado = 1;
-    public int cont=0;
 
     public void getFile(byte[] messageFragment){
         cont++;
@@ -600,6 +600,7 @@ public class Node {
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
+                            n_sequencia_esperado = 1;
                             hasStarted=true;
                             String[] split = responsenFromNode.split("\\|");
                             System.out.println("Received FileName: " + split[1]);
@@ -614,7 +615,6 @@ public class Node {
                             //System.out.println("Node 1: " + responsenFromNode);
                         }
                         else if (responsenFromNode.startsWith("FIN")){
-                            hasStarted=false;
                             //System.out.println(responsenFromNode);
                             isOver = true;
                         }
@@ -723,69 +723,3 @@ public class Node {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-/*
- * 
- * 
- * 
- * 
-    public void sendFirstFragment(String filename, String ipToSend) throws IOException{
-        infoFile = new File(this.pathToFiles+"/"+filename); // File to send
-        path = infoFile.toPath();
-        try{
-            fileInBytes = Files.readAllBytes(path);     // Convert file in bytes
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
-        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
-        sendFragment("KaiCenat_blocoab","10.0.2.20",1);
-    }
-
-
-
-    public void sendFragment(String filename, String ipToSend, int fragmentNumber) throws IOException{
-        int maxPacketSize = 1021;
-
-        int totalBytes = fileInBytes.length;
-        int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
-
-        if (fragmentNumber > totalFragments){
-            return;
-        }
-
-        boolean isLastFragment = false;
-
-        int start = (fragmentNumber - 1) * maxPacketSize;
-        int end = fragmentNumber * maxPacketSize;
-
-        // Mensagem com fragmentação (É a última)
-        if (end > totalBytes) {
-            end = totalBytes;
-            isLastFragment = true;
-        }
-        byte[] eachMessage = new byte[end-start+3];
-        if (isLastFragment){
-            eachMessage[0] = (byte) (1);
-        }
-        else{
-            eachMessage[0] = (byte) (0);
-        }
-        eachMessage[1] = (byte) (fragmentNumber & 0xFF);
-        eachMessage[2] = (byte) ((fragmentNumber >> 8) & 0xFF);
-        System.arraycopy(fileInBytes, start, eachMessage, 3, end-start);
-        sendMessageToNodeInBytes(eachMessage,ipToSend);
-    }
- * 
- */
