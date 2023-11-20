@@ -89,6 +89,10 @@ node n6 {
     network-config {
 	hostname Router
 	!
+	interface eth5
+	 ip address 10.0.5.1/24
+	 ipv6 address 2001:5::1/64
+	!
 	interface eth4
 	 ip address 10.0.4.1/24
 	 ipv6 address 2001:4::1/64
@@ -118,6 +122,24 @@ node n6 {
     interface-peer {eth2 n3}
     interface-peer {eth3 n4}
     interface-peer {eth4 n5}
+    interface-peer {eth5 n7}
+}
+
+node n7 {
+    type router
+    model host
+    network-config {
+	hostname DNS
+	!
+	interface eth0
+	 ipv6 address 2001:5::10/64
+	 ip address 10.10.10.10/24
+	!
+    }
+    canvas c1
+    iconcoords {499.0 93.0}
+    labelcoords {499.0 125.0}
+    interface-peer {eth0 n6}
 }
 
 link l1 {
@@ -146,6 +168,11 @@ link l5 {
     duplicate 5
     ber 10
     nodes {n6 n5}
+    bandwidth 0
+}
+
+link l6 {
+    nodes {n7 n6}
     bandwidth 0
 }
 

@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class Node {
+    private String nodeName;
     private String ipNode;
     private boolean killNode = false;
     private String pathToFiles;
@@ -26,8 +27,7 @@ public class Node {
     private Map<String,Integer> infoProgression; // Regista as mensagens recebidas por UDP
     private FileOutputStream outputStream;
 
-
-
+    private Socket socketDNS;
 
     // Para UDP
 
@@ -37,12 +37,14 @@ public class Node {
     private int totalSize = 0;
 
 
-    public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
+    public Node(String node_name, String ip, String pathToFiles, Socket socketDNS) throws IOException{
+        this.nodeName = node_name;
         this.ipNode = ip;
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
-        this.socketUDP = socketUDP;
-        this.socketTCP = socketTCP;
+        this.socketDNS = socketDNS;
+        this.socketUDP = new DatagramSocket(9090);
+        this.socketTCP = new Socket(dns_get_ip("FSTracker"), 9090); //"localhost"
         this.outputStream = null;
         this.fileInBytes = null;
         this.infoProgression = new HashMap<>();
@@ -50,8 +52,7 @@ public class Node {
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
         sendInfoToFS_Tracker(getFilesInfo());
         keepAlive();
-
-
+        System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.\n");
     }
 
 
@@ -644,38 +645,37 @@ public class Node {
 
 
 
+    ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
+    // DNS
+    ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
 
+    // Lookup ao servidor DNS
+    public String dns_get_ip(String name) throws IOException{
+        BufferedReader bufferedFromDNS = new BufferedReader(new InputStreamReader(socketDNS.getInputStream()));
+        BufferedWriter bufferedToDNS = new BufferedWriter(new OutputStreamWriter(socketDNS.getOutputStream()));
 
+        String request = nodeName + "|" + ipNode + "|" + "GET" + "|" + name;
+        bufferedToDNS.write(request);
+        bufferedToDNS.newLine();
+        bufferedToDNS.flush();
 
-
-
-
-
-
+        String response = bufferedFromDNS.readLine();
+        System.out.println(response);
+        return response;
+    }
 
     public static void main (String[] args) throws IOException{
-        Socket socketTCP = new Socket("10.0.0.10",9090); //"localhost"
-        String ipNode = socketTCP.getLocalAddress().toString().substring(1);
 
-        DatagramSocket socketUDP = new DatagramSocket(9090);
+        // Nome do nodo e a sua pasta
+        String node_name = args[0];
+        String pathToFiles = "/home/core/Desktop/Projeto/" + node_name;
 
-        String pathToFiles;
-        if (ipNode.equals("10.0.1.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node1";
-        }
-        else if (ipNode.equals("10.0.2.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node2";
-        }
-        else if (ipNode.equals("10.0.3.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node3";
-        }
-        else{
-            pathToFiles = "/home/core/Desktop/Projeto/Node4";
-        }
+        Socket socketDNS = new Socket("10.0.5.10", 2302); // SOCKET SERVIDOR DNS
+        String ipNode = socketDNS.getLocalAddress().toString().substring(1);
 
-
-        System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.\n");
-        Node node = new Node(ipNode, socketTCP, pathToFiles, socketUDP);
+        Node node = new Node(node_name, ipNode, pathToFiles, socketDNS);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
 
