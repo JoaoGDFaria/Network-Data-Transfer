@@ -4,14 +4,14 @@ import java.net.*;
 /**
  * CLASS HANDLER - Trata de pedidos de um cliente
  */
-class Node_Handler extends Thread{
+class NodeHandler extends Thread{
     private Socket socket;                   // Conecção entre cliente e servidor
     private BufferedWriter bufferedToNode;   // Escrever informação enviada para o cliente
     private BufferedReader bufferedFromNode; // Ler informação enviada pelo cliente
     private FS_Tracker tracker;
     private String ipAddress;
 
-    public Node_Handler(Socket socket, FS_Tracker tracker) throws IOException{
+    public NodeHandler(Socket socket, FS_Tracker tracker) throws IOException{
         this.socket = socket;
         this.bufferedToNode = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); // Enviar 
         this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
