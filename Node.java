@@ -33,9 +33,9 @@ public class Node {
 
     //private Map<String, FileOutputStream> filesOutputStream;
     private Map<String, FileOutputStream> outputStream = new HashMap<>();
-    private int totalSize = 0;
+    private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
-    boolean hasStarted = false;
+    private boolean hasStarted = false;
     public Map<String, Integer> n_sequencia_esperado = new HashMap<>();
     public int cont=0;
     public String fileName;
@@ -458,7 +458,6 @@ public class Node {
         for(String info: substrings){
             String fName = filename+"_bloco"+ (char) ((Integer.parseInt(info) - 1) / 26 % 26 + 'a') + (char) ((Integer.parseInt(info) - 1) % 26 + 'a');
             sendFiles(fName,ipDestino);
-            break;
         }
     }
 
@@ -540,7 +539,7 @@ public class Node {
                 int fragNow;
                 while (true) {
                     try {
-                        Thread.sleep(2);
+                        Thread.sleep(5);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -589,7 +588,7 @@ public class Node {
 
             try{
                 if (last_fragment == 1){
-                    int size = totalSize%(1024-aux);
+                    int size = (totalSize.get(nameFile))%(1024-aux);
 
                     byte[] file_info = new byte[size];
                     System.arraycopy(messageFragment, aux, file_info, 0, size);
@@ -661,7 +660,7 @@ public class Node {
                             // MISSING LOCK
                             n_sequencia_esperado.put(split[1], 1);
                             System.out.println("Received FileName: " + split[1]);
-                            totalSize = Integer.parseInt(split[2]);
+                            totalSize.put(split[1],  Integer.parseInt(split[2]));
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
 
                             outputStream.put(split[1], new FileOutputStream(file));
