@@ -34,22 +34,11 @@ public class FS_Tracker {
         ServerSocket tracker_socket = new ServerSocket(port);
         System.out.println("Servidor ativo em 10.0.0.10 porta " + tracker_socket.getLocalPort() + ".\n");
 
-        dns_beacon();
         checkAlive();
 
         while (!tracker_socket.isClosed()) {
             new NodeHandler(tracker_socket.accept(), this).start();
         }
-    }
-
-    public void dns_beacon() throws IOException{
-        Socket socketDNS = new Socket("10.0.5.10", 2302);
-        BufferedWriter bufferedToDNS = new BufferedWriter(new OutputStreamWriter(socketDNS.getOutputStream()));
-
-        String request = "FSTracker" + "|" + socketDNS.getLocalAddress().toString().substring(1) + "|BEACON";
-        bufferedToDNS.write(request);
-        bufferedToDNS.newLine();
-        bufferedToDNS.flush();
     }
 
     public void checkAlive(){
@@ -156,7 +145,7 @@ public class FS_Tracker {
 
     public void sendIPBack(String fileName, Integer blockNumber){
         try{
-            lock.writeLock().lock();
+            lock.readLock().lock();
             Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
             List<String> IPs = blockMap.get(blockNumber);
 
@@ -169,7 +158,7 @@ public class FS_Tracker {
             blockMap.put(blockNumber, IPs);
             fileMemory.put(fileName, blockMap);
         }finally{
-            lock.writeLock().unlock();
+            lock.readLock().unlock();
         }
     }
 
