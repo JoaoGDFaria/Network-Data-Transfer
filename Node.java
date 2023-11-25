@@ -36,6 +36,7 @@ public class Node {
     private List<String> hasStarted = new ArrayList<>();
     private Map<String, Integer> n_sequencia_esperado = new HashMap<>();
     private String fileName;
+    private boolean hasDownloadStarted = false;
     private Map<String, String> ipToSendAKCS = new HashMap<>();
 
 
@@ -510,7 +511,7 @@ public class Node {
                     if(!fragmentoAtual.containsKey(filename)){
                         try {
                             sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
-                            //System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
+                            System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -555,7 +556,7 @@ public class Node {
                 System.arraycopy(fileInBytes, start, eachMessage, 4+nameBytes.length, end-start);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    //System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
+                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -585,7 +586,7 @@ public class Node {
                         keepCheck++;
                         try {
                             sendMessageToNodeInBytes(eachMessage,ipToSend);
-                            //System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
+                            System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -707,6 +708,13 @@ public class Node {
             @Override
             public void run() {
                 while (socketTCP.isConnected() && !killNode) {
+
+
+                    if(hasDownloadStarted && outputStream.isEmpty()){
+                        System.out.println("Download completed!");
+                        hasDownloadStarted = false;
+                    }
+
                     try {
                         byte[] receiveData = new byte[1024];
                         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -715,13 +723,13 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
-                            //System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
+                            System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
-                            //System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
+                            System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
 
 
@@ -757,6 +765,7 @@ public class Node {
                         }
                         // Fragmented messages
                         else{
+                            hasDownloadStarted = true;
                             getFile(receivePacket.getData());
                         }
                     }
@@ -777,7 +786,7 @@ public class Node {
             DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
             clientSocket.send(p);
             clientSocket.close();
-            //System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
+            System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
         }
         finally{
             l.unlock();
