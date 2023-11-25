@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -14,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Node {
     private String ipNode;
@@ -27,11 +26,10 @@ public class Node {
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
 
 
-    private ReentrantReadWriteLock l = new ReentrantReadWriteLock();
+    private ReentrantLock l = new ReentrantLock();
 
     // Para UDP
 
-    //private Map<String, FileOutputStream> filesOutputStream;
     private Map<String, FileOutputStream> outputStream = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
@@ -415,34 +413,49 @@ public class Node {
             new Thread(() -> {
                 String key = entry.getKey();
                 String values = entry.getValue();
-                System.out.println("TOU CA"+ key + "\n\n\n\n");
                 try{
                     sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
                 }
                 catch (Exception e){
-                    System.out.println(e.getMessage());
+                    e.getMessage();
                 }
 
 
                 while (true) {
+
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    if(!hasStarted.contains(key)){
-                        try {
-                            sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
-                            System.out.println("Resending Asking For file");
-                        } catch (IOException e) {
-                            e.printStackTrace();
+
+                    l.lock();
+                    try{
+                        if(!hasStarted.contains(key)){
+                            try {
+                                sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
+                                System.out.println("Resending Asking For file");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{
+                            break;
                         }
                     }
-                    else{
-                        break;
+                    finally{
+                        l.unlock();
                     }
+                    
                 }
-                hasStarted.remove(key);
+                l.lock();
+                try{
+                    hasStarted.remove(key);    
+                } 
+                finally{
+                    l.unlock();
+                }
+                
             }).start();
             
         }
@@ -484,22 +497,31 @@ public class Node {
             }
 
             while (true) {
+
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if(!fragmentoAtual.containsKey(filename)){
-                    try {
-                        sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
-                        System.out.println("Resending ..... ACK -> "+ 0);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+
+                l.lock();
+                try{
+                    if(!fragmentoAtual.containsKey(filename)){
+                        try {
+                            sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
+                            System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                        break;
                     }
                 }
-                else{
-                    break;
+                finally{
+                    l.unlock();
                 }
+
             }
 
             byte[] nameBytes = filename.getBytes();
@@ -532,34 +554,37 @@ public class Node {
                 System.arraycopy(fileInBytes, start, eachMessage, 4+nameBytes.length, end-start);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    System.out.println("ACK -> "+ i);
+                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
                 int fragNow;
                 while (true) {
+
                     try {
-                        Thread.sleep(5);
+                        Thread.sleep(15);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 
-                    l.readLock().lock();                      
+
+                    l.lock();                      
                     try{
                         fragNow = fragmentoAtual.get(filename);
                     }
                     finally{
-                        l.readLock().unlock();
+                        l.unlock();
                     }
 
+
                     if(i+1!=fragNow){
-                        if(keepCheck==10) return;
+                        if(keepCheck==150) return;
 
                         keepCheck++;
                         try {
                             sendMessageToNodeInBytes(eachMessage,ipToSend);
-                            System.out.println("Resending ..... ACK -> "+ i);
+                            System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -582,38 +607,74 @@ public class Node {
         String nameFile = new String(messageFragment, 4, filenameSize, StandardCharsets.UTF_8);
         int aux = 4 + filenameSize;
 
-        int n_seq_esperado = n_sequencia_esperado.get(nameFile);
+
+        int n_seq_esperado;
+        l.lock();
+        try{
+            n_seq_esperado = n_sequencia_esperado.get(nameFile);
+        }
+        finally{
+            l.unlock();
+        }
+
+
         // Se o número de sequencia for o esperado, tudo corre bem
         if (numero_sequencia == n_seq_esperado){
 
             try{
                 if (last_fragment == 1){
-                    int size = (totalSize.get(nameFile))%(1024-aux);
+
+                    int size;
+                    l.lock();
+                    try{
+                        size = (totalSize.get(nameFile))%(1024-aux);
+                    }
+                    finally{
+                        l.unlock();
+                    }
+                    
 
                     byte[] file_info = new byte[size];
                     System.arraycopy(messageFragment, aux, file_info, 0, size);
 
-                    // MISSING LOCK
-                    FileOutputStream otps = outputStream.get(nameFile);
-                    otps.write(file_info);
-                    otps.close();
-                    outputStream.put(nameFile, otps);
-
-                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                    l.lock();
+                    try{
+                        FileOutputStream otps = outputStream.get(nameFile);    
+                        otps.write(file_info);
+                        otps.close();
+                        outputStream.put(nameFile, otps);
+                        sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                    }
+                    finally{
+                        l.unlock();
+                    }
+                    
                 }
                 else{
                     byte[] file_info = new byte[1024-aux];
                     System.arraycopy(messageFragment, aux, file_info, 0, file_info.length);
 
-                    // MISSING LOCK
-                    FileOutputStream otps = outputStream.get(nameFile);
-                    otps.write(file_info);
-                    outputStream.put(nameFile, otps);
+                    l.lock();
+                    try{
+                        FileOutputStream otps = outputStream.get(nameFile);
+                        otps.write(file_info);
+                        outputStream.put(nameFile, otps);
+                        sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                    }
+                    finally{
+                        l.unlock();
+                    }
 
-
-                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 }
-                n_sequencia_esperado.put(nameFile, n_seq_esperado+1);
+
+                l.lock();
+                try{
+                    n_sequencia_esperado.put(nameFile, n_seq_esperado+1);    
+                }
+                finally{
+                    l.unlock();
+                }
+                
             }
             catch (IOException e){
                 e.printStackTrace();
@@ -621,11 +682,16 @@ public class Node {
 
         }
         else{
+            l.lock();
             try{
-                sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
-            } catch (IOException e){
-                
+                try{
+                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                } catch (IOException e){ }
             }
+            finally{
+                l.unlock();
+            }
+
         }
 
     }
@@ -647,36 +713,45 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
-                            System.out.println("Received: " + responsenFromNode);
+                            System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
-                            // MISSING LOCK
-                            n_sequencia_esperado.put(split[1], 1);
-                            hasStarted.add(split[3]);
-                            System.out.println("Received FileName: " + split[1]);
-                            totalSize.put(split[1],  Integer.parseInt(split[2]));
+                            System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
 
-                            ipToSendAKCS.put(split[1], split[3]); // Pra modificar depois
 
-                            outputStream.put(split[1], new FileOutputStream(file));
-
-
+                            l.lock();
+                            try{
+                                n_sequencia_esperado.put(split[1], 1);
+                                hasStarted.add(split[3]);
+                                totalSize.put(split[1],  Integer.parseInt(split[2]));
+                                outputStream.put(split[1], new FileOutputStream(file));  
+                                ipToSendAKCS.put(split[1], split[3]);  
+                            }
+                            finally{
+                                l.unlock();
+                            }
+                            
+                            
                             sendMessageToNode("ACK0|"+split[1], split[3]);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
                             int ack_num = Integer.parseInt(split[0].substring(3));
-                            l.writeLock().lock();
+
+
+                            l.lock();
                             try{
                                 fragmentoAtual.put(split[1], ack_num+1);
                             }
                             finally{
-                                l.writeLock().unlock();
+                                l.unlock();
                             }
+
+
                         }
                         // Fragmented messages
                         else{
@@ -693,22 +768,36 @@ public class Node {
 
     // IP a quem eu quero enviar uma String
     public void sendMessageToNode(String messageToSend, String ipToSend) throws IOException {
-        DatagramSocket clientSocket = new DatagramSocket();
-        byte[] buf = messageToSend.getBytes();
-        DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
-        clientSocket.send(p);
-        clientSocket.close();
-        System.out.println("Sent: "+messageToSend);
+        l.lock();
+        try{
+            DatagramSocket clientSocket = new DatagramSocket();
+            byte[] buf = messageToSend.getBytes();
+            DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
+            clientSocket.send(p);
+            clientSocket.close();
+            System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
+        }
+        finally{
+            l.unlock();
+        }
+
     }
 
 
 
     // IP a quem eu quero enviar uma lista de bytes
     public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend) throws IOException {
-        DatagramSocket clientSocket = new DatagramSocket();
-        DatagramPacket p = new DatagramPacket(messageToSend, messageToSend.length, InetAddress.getByName(ipToSend), 9090);
-        clientSocket.send(p);
-        clientSocket.close();
+        l.lock();
+        try{
+            DatagramSocket clientSocket = new DatagramSocket();
+            DatagramPacket p = new DatagramPacket(messageToSend, messageToSend.length, InetAddress.getByName(ipToSend), 9090);
+            clientSocket.send(p);
+            clientSocket.close();
+        }
+        finally{
+            l.unlock();
+        }
+
     }
 
 
