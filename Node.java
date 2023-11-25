@@ -480,6 +480,7 @@ public class Node {
     // Multithread para funcionar em paralelo
     public void sendFiles(String filename, String ipToSend){
         new Thread(() -> {
+            fragmentoAtual.remove(filename);
             File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
             Path path = infoFile.toPath();
             byte[] fileInBytes = null;
@@ -509,7 +510,7 @@ public class Node {
                     if(!fragmentoAtual.containsKey(filename)){
                         try {
                             sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
-                            System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
+                            //System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -554,7 +555,7 @@ public class Node {
                 System.arraycopy(fileInBytes, start, eachMessage, 4+nameBytes.length, end-start);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
+                    //System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -584,7 +585,7 @@ public class Node {
                         keepCheck++;
                         try {
                             sendMessageToNodeInBytes(eachMessage,ipToSend);
-                            System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
+                            //System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -628,6 +629,7 @@ public class Node {
                     l.lock();
                     try{
                         size = (totalSize.get(nameFile))%(1024-aux);
+                        totalSize.remove(nameFile);
                     }
                     finally{
                         l.unlock();
@@ -642,7 +644,7 @@ public class Node {
                         FileOutputStream otps = outputStream.get(nameFile);    
                         otps.write(file_info);
                         otps.close();
-                        outputStream.put(nameFile, otps);
+                        outputStream.remove(nameFile);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                     }
                     finally{
@@ -713,13 +715,13 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
-                            System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
+                            //System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
-                            System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
+                            //System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
 
 
@@ -729,7 +731,7 @@ public class Node {
                                 hasStarted.add(split[3]);
                                 totalSize.put(split[1],  Integer.parseInt(split[2]));
                                 outputStream.put(split[1], new FileOutputStream(file));  
-                                ipToSendAKCS.put(split[1], split[3]);  
+                                ipToSendAKCS.put(split[1], split[3]); // Filename -> ipOrigem 
                             }
                             finally{
                                 l.unlock();
@@ -775,7 +777,7 @@ public class Node {
             DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
             clientSocket.send(p);
             clientSocket.close();
-            System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
+            //System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
         }
         finally{
             l.unlock();
