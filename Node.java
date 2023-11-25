@@ -35,11 +35,11 @@ public class Node {
     private Map<String, FileOutputStream> outputStream = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
-    private boolean hasStarted = false;
-    public Map<String, Integer> n_sequencia_esperado = new HashMap<>();
-    public int cont=0;
-    public String fileName;
-    public String ipToSendAKCS;
+    private List<String> hasStarted = new ArrayList<>();
+    private Map<String, Integer> n_sequencia_esperado = new HashMap<>();
+    private int cont=0;
+    private String fileName;
+    private Map<String, String> ipToSendAKCS = new HashMap<>();
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -413,7 +413,7 @@ public class Node {
         for (Map.Entry<String, String> entry : messages.entrySet()) {
             String key = entry.getKey();
             String values = entry.getValue();
-            ipToSendAKCS = key; // Pra modificar depois
+            
             try{
                 sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
             }
@@ -428,7 +428,7 @@ public class Node {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if(!hasStarted){
+                if(!hasStarted.contains(key)){
                     try {
                         sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
                         System.out.println("Resending Asking For file");
@@ -440,10 +440,7 @@ public class Node {
                     break;
                 }
             }
-            hasStarted=false;
-            break; // TO REMOVE LATER
-            // ADD BREAK HERE TO DEBBUG
-            
+            hasStarted.remove(key);
         }
     }
 
@@ -477,7 +474,7 @@ public class Node {
             }
 
             try {
-                sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
+                sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -490,7 +487,7 @@ public class Node {
                 }
                 if(!fragmentoAtual.containsKey(filename)){
                     try {
-                        sendMessageToNode("F|"+filename+"|"+fileInBytes.length, ipToSend);
+                        sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
                         System.out.println("Resending ..... ACK -> "+ 0);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -602,7 +599,7 @@ public class Node {
 
                     System.out.println("Packets received: "+ cont);
                     cont=0;
-                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS);
+                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 }
                 else{
                     byte[] file_info = new byte[1024-aux];
@@ -614,7 +611,7 @@ public class Node {
                     outputStream.put(nameFile, otps);
 
 
-                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS);
+                    sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 }
                 n_sequencia_esperado.put(nameFile, n_seq_esperado+1);
             }
@@ -625,7 +622,7 @@ public class Node {
         }
         else{
             try{
-                sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS);
+                sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
             } catch (IOException e){
                 
             }
@@ -655,18 +652,20 @@ public class Node {
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
-                            hasStarted=true;
                             String[] split = responsenFromNode.split("\\|");
                             // MISSING LOCK
                             n_sequencia_esperado.put(split[1], 1);
+                            hasStarted.add(split[3]);
                             System.out.println("Received FileName: " + split[1]);
                             totalSize.put(split[1],  Integer.parseInt(split[2]));
                             File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
 
+                            ipToSendAKCS.put(split[1], split[3]); // Pra modificar depois
+
                             outputStream.put(split[1], new FileOutputStream(file));
 
 
-                            sendMessageToNode("ACK0|"+split[1], ipToSendAKCS);
+                            sendMessageToNode("ACK0|"+split[1], split[3]);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
