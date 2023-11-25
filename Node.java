@@ -37,7 +37,6 @@ public class Node {
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
     private List<String> hasStarted = new ArrayList<>();
     private Map<String, Integer> n_sequencia_esperado = new HashMap<>();
-    private int cont=0;
     private String fileName;
     private Map<String, String> ipToSendAKCS = new HashMap<>();
 
@@ -411,36 +410,41 @@ public class Node {
         
         }
         for (Map.Entry<String, String> entry : messages.entrySet()) {
-            String key = entry.getKey();
-            String values = entry.getValue();
-            
-            try{
-                sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
-            }
-            catch (Exception e){
-                System.out.println(e.getMessage());
-            }
 
 
-            while (true) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            new Thread(() -> {
+                String key = entry.getKey();
+                String values = entry.getValue();
+                System.out.println("TOU CA"+ key + "\n\n\n\n");
+                try{
+                    sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
                 }
-                if(!hasStarted.contains(key)){
+                catch (Exception e){
+                    System.out.println(e.getMessage());
+                }
+
+
+                while (true) {
                     try {
-                        sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
-                        System.out.println("Resending Asking For file");
-                    } catch (IOException e) {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    if(!hasStarted.contains(key)){
+                        try {
+                            sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
+                            System.out.println("Resending Asking For file");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                        break;
+                    }
                 }
-                else{
-                    break;
-                }
-            }
-            hasStarted.remove(key);
+                hasStarted.remove(key);
+            }).start();
+            
         }
     }
 
@@ -572,7 +576,6 @@ public class Node {
 
 
     public void getFile(byte[] messageFragment){
-        cont++;
         int last_fragment = (messageFragment[0]);
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
         int filenameSize = (messageFragment[3] & 0xFF);
@@ -596,9 +599,6 @@ public class Node {
                     otps.close();
                     outputStream.put(nameFile, otps);
 
-
-                    System.out.println("Packets received: "+ cont);
-                    cont=0;
                     sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 }
                 else{
