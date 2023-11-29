@@ -164,10 +164,6 @@ node n6 {
     network-config {
 	hostname n6
 	!
-	interface eth4
-	 ip address 10.0.27.1/24
-	 ipv6 address 2001:27::1/64
-	!
 	interface eth3
 	 ip address 10.0.26.2/24
 	 ipv6 address 2001:26::2/64
@@ -192,7 +188,6 @@ node n6 {
     interface-peer {eth1 n1}
     interface-peer {eth2 n9}
     interface-peer {eth3 n25}
-    interface-peer {eth4 n26}
 }
 
 node n7 {
@@ -302,7 +297,7 @@ node n11 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node1
 	!
 	interface eth0
 	 ip address 10.0.10.20/24
@@ -326,10 +321,8 @@ node n11 {
 	custom-command preenche_resolvconf.sh
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
-	echo "domain cc.pt" >> /etc/resolv.conf
-	echo "domain cc.net" >> /etc/resolv.conf
-	echo "domain cc.com" >> /etc/resolv.conf
-	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf 
 	}
     }
@@ -340,7 +333,7 @@ node n12 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node2
 	!
 	interface eth0
 	 ip address 10.0.11.20/24
@@ -348,8 +341,8 @@ node n12 {
 	!
     }
     canvas c1
-    iconcoords {452.0 894.0}
-    labelcoords {452.0 926.0}
+    iconcoords {451.0 894.0}
+    labelcoords {451.0 926.0}
     interface-peer {eth0 n8}
 }
 
@@ -357,7 +350,7 @@ node n13 {
     type router
     model host
     network-config {
-	hostname FSTracker
+	hostname fstracker
 	!
 	interface eth0
 	 ip address 10.0.12.10/24
@@ -374,7 +367,7 @@ node n14 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node1
 	!
 	interface eth0
 	 ip address 10.0.15.20/24
@@ -391,7 +384,7 @@ node n15 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node2
 	!
 	interface eth0
 	 ip address 10.0.16.20/24
@@ -408,7 +401,7 @@ node n16 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node2
 	!
 	interface eth0
 	 ip address 10.0.14.20/24
@@ -425,7 +418,7 @@ node n17 {
     type router
     model PC
     network-config {
-	hostname Node
+	hostname node1
 	!
 	interface eth0
 	 ip address 10.0.13.20/24
@@ -517,10 +510,8 @@ node n21 {
 	custom-command preenche_resolvconf.sh
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
-	echo "domain cc.pt" >> /etc/resolv.conf
-	echo "domain cc.net" >> /etc/resolv.conf
-	echo "domain cc.com" >> /etc/resolv.conf
-	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf 
 	}
     }
@@ -613,44 +604,6 @@ node n25 {
     interface-peer {eth0 n3}
     interface-peer {eth1 n24}
     interface-peer {eth2 n6}
-}
-
-node n26 {
-    type router
-    model host
-    network-config {
-	hostname root
-	!
-	interface eth0
-	 ip address 10.0.27.10/24
-	 ipv6 address 2001:27::10/64
-	!
-    }
-    canvas c1
-    iconcoords {851.0 78.0}
-    labelcoords {851.0 110.0}
-    interface-peer {eth0 n6}
-    services {DefaultRoute SSH StaticRoute UserDefined}
-    custom-config {
-	custom-config-id service:UserDefined
-	custom-command UserDefined
-	config {
-	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
-	}
-    }
-    custom-config {
-	custom-config-id service:UserDefined:preenche_resolvconf.sh
-	custom-command preenche_resolvconf.sh
-	config {
-	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
-	echo "domain cc.pt" >> /etc/resolv.conf
-	echo "domain cc.net" >> /etc/resolv.conf
-	echo "domain cc.com" >> /etc/resolv.conf
-	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
-	echo "" >> /etc/resolv.conf 
-	}
-    }
 }
 
 link l1 {
@@ -785,11 +738,6 @@ link l26 {
 
 link l27 {
     nodes {n25 n6}
-    bandwidth 0
-}
-
-link l28 {
-    nodes {n26 n6}
     bandwidth 0
 }
 
