@@ -1,0 +1,874 @@
+node n1 {
+    type router
+    model router
+    network-config {
+	hostname n1
+	!
+	interface eth3
+	 ip address 10.0.17.1/24
+	 ipv6 address 2001:17::1/64
+	!
+	interface eth2
+	 ip address 10.0.6.2/24
+	 ipv6 address 2001:6::2/64
+	!
+	interface eth1
+	 ip address 10.0.5.2/24
+	 ipv6 address 2001:5::2/64
+	!
+	interface eth0
+	 ip address 10.0.0.1/24
+	 ipv6 address 2001:0::1/64
+	!
+    }
+    canvas c1
+    iconcoords {595.0 238.0}
+    labelcoords {595.0 270.0}
+    interface-peer {eth0 n2}
+    interface-peer {eth1 n6}
+    interface-peer {eth2 n7}
+    interface-peer {eth3 n18}
+}
+
+node n2 {
+    type router
+    model router
+    network-config {
+	hostname n2
+	!
+	interface eth2
+	 ip address 10.0.21.1/24
+	 ipv6 address 2001:21::1/64
+	!
+	interface eth3
+	 ip address 10.0.18.1/24
+	 ipv6 address 2001:18::1/64
+	!
+	interface eth1
+	 ip address 10.0.1.1/24
+	 ipv6 address 2001:1::1/64
+	!
+	interface eth0
+	 ip address 10.0.0.2/24
+	 ipv6 address 2001:0::2/64
+	!
+    }
+    canvas c1
+    iconcoords {432.0 418.0}
+    labelcoords {432.0 450.0}
+    interface-peer {eth0 n1}
+    interface-peer {eth1 n3}
+    interface-peer {eth3 n19}
+    interface-peer {eth2 n22}
+}
+
+node n3 {
+    type router
+    model router
+    network-config {
+	hostname n3
+	!
+	interface eth4
+	 ip address 10.0.25.2/24
+	 ipv6 address 2001:25::2/64
+	!
+	interface eth3
+	 ip address 10.0.22.1/24
+	 ipv6 address 2001:22::1/64
+	!
+	interface eth2
+	 ip address 10.0.7.2/24
+	 ipv6 address 2001:7::2/64
+	!
+	interface eth1
+	 ip address 10.0.2.1/24
+	 ipv6 address 2001:2::1/64
+	!
+	interface eth0
+	 ip address 10.0.1.2/24
+	 ipv6 address 2001:1::2/64
+	!
+    }
+    canvas c1
+    iconcoords {539.0 616.0}
+    labelcoords {539.0 648.0}
+    interface-peer {eth0 n2}
+    interface-peer {eth1 n4}
+    interface-peer {eth2 n8}
+    interface-peer {eth3 n25}
+    interface-peer {eth4 n22}
+}
+
+node n4 {
+    type router
+    model router
+    network-config {
+	hostname n4
+	!
+	interface eth3
+	 ip address 10.0.19.1/24
+	 ipv6 address 2001:19::1/64
+	!
+	interface eth2
+	 ip address 10.0.8.2/24
+	 ipv6 address 2001:8::2/64
+	!
+	interface eth1
+	 ip address 10.0.3.1/24
+	 ipv6 address 2001:3::1/64
+	!
+	interface eth0
+	 ip address 10.0.2.2/24
+	 ipv6 address 2001:2::2/64
+	!
+    }
+    canvas c1
+    iconcoords {906.0 616.0}
+    labelcoords {906.0 648.0}
+    interface-peer {eth0 n3}
+    interface-peer {eth1 n5}
+    interface-peer {eth2 n10}
+    interface-peer {eth3 n20}
+}
+
+node n5 {
+    type router
+    model router
+    network-config {
+	hostname n5
+	!
+	interface eth3
+	 ip address 10.0.20.1/24
+	 ipv6 address 2001:20::1/64
+	!
+	interface eth1
+	 ip address 10.0.4.1/24
+	 ipv6 address 2001:4::1/64
+	!
+	interface eth0
+	 ip address 10.0.3.2/24
+	 ipv6 address 2001:3::2/64
+	!
+    }
+    canvas c1
+    iconcoords {1017.0 411.0}
+    labelcoords {1017.0 443.0}
+    interface-peer {eth0 n4}
+    interface-peer {eth1 n6}
+    interface-peer {eth3 n21}
+}
+
+node n6 {
+    type router
+    model router
+    network-config {
+	hostname n6
+	!
+	interface eth4
+	 ip address 10.0.27.1/24
+	 ipv6 address 2001:27::1/64
+	!
+	interface eth3
+	 ip address 10.0.26.2/24
+	 ipv6 address 2001:26::2/64
+	!
+	interface eth2
+	 ip address 10.0.9.2/24
+	 ipv6 address 2001:9::2/64
+	!
+	interface eth1
+	 ip address 10.0.5.1/24
+	 ipv6 address 2001:5::1/64
+	!
+	interface eth0
+	 ip address 10.0.4.2/24
+	 ipv6 address 2001:4::2/64
+	!
+    }
+    canvas c1
+    iconcoords {883.0 239.0}
+    labelcoords {883.0 271.0}
+    interface-peer {eth0 n5}
+    interface-peer {eth1 n1}
+    interface-peer {eth2 n9}
+    interface-peer {eth3 n25}
+    interface-peer {eth4 n26}
+}
+
+node n7 {
+    type router
+    model router
+    network-config {
+	hostname n7
+	!
+	interface eth1
+	 ip address 10.0.12.1/24
+	 ipv6 address 2001:12::1/64
+	!
+	interface eth0
+	 ip address 10.0.6.1/24
+	 ipv6 address 2001:6::1/64
+	!
+    }
+    canvas c1
+    iconcoords {289.0 150.0}
+    labelcoords {289.0 182.0}
+    interface-peer {eth0 n1}
+    interface-peer {eth1 n13}
+}
+
+node n8 {
+    type router
+    model router
+    network-config {
+	hostname n8
+	!
+	interface eth2
+	 ip address 10.0.11.1/24
+	 ipv6 address 2001:11::1/64
+	!
+	interface eth1
+	 ip address 10.0.10.1/24
+	 ipv6 address 2001:10::1/64
+	!
+	interface eth0
+	 ip address 10.0.7.1/24
+	 ipv6 address 2001:7::1/64
+	!
+    }
+    canvas c1
+    iconcoords {338.0 804.0}
+    labelcoords {338.0 836.0}
+    interface-peer {eth0 n3}
+    interface-peer {eth1 n11}
+    interface-peer {eth2 n12}
+}
+
+node n9 {
+    type router
+    model router
+    network-config {
+	hostname n9
+	!
+	interface eth2
+	 ip address 10.0.14.1/24
+	 ipv6 address 2001:14::1/64
+	!
+	interface eth1
+	 ip address 10.0.13.1/24
+	 ipv6 address 2001:13::1/64
+	!
+	interface eth0
+	 ip address 10.0.9.1/24
+	 ipv6 address 2001:9::1/64
+	!
+    }
+    canvas c1
+    iconcoords {1094.0 154.0}
+    labelcoords {1094.0 186.0}
+    interface-peer {eth0 n6}
+    interface-peer {eth1 n17}
+    interface-peer {eth2 n16}
+}
+
+node n10 {
+    type router
+    model router
+    network-config {
+	hostname n10
+	!
+	interface eth2
+	 ip address 10.0.16.1/24
+	 ipv6 address 2001:16::1/64
+	!
+	interface eth1
+	 ip address 10.0.15.1/24
+	 ipv6 address 2001:15::1/64
+	!
+	interface eth0
+	 ip address 10.0.8.1/24
+	 ipv6 address 2001:8::1/64
+	!
+    }
+    canvas c1
+    iconcoords {1174.0 772.0}
+    labelcoords {1174.0 804.0}
+    interface-peer {eth0 n4}
+    interface-peer {eth1 n14}
+    interface-peer {eth2 n15}
+}
+
+node n11 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.10.20/24
+	 ipv6 address 2001:10::20/64
+	!
+    }
+    canvas c1
+    iconcoords {199.0 870.0}
+    labelcoords {199.0 902.0}
+    interface-peer {eth0 n8}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "domain cc.pt" >> /etc/resolv.conf
+	echo "domain cc.net" >> /etc/resolv.conf
+	echo "domain cc.com" >> /etc/resolv.conf
+	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf 
+	}
+    }
+    services {DefaultRoute UserDefined}
+}
+
+node n12 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.11.20/24
+	 ipv6 address 2001:11::20/64
+	!
+    }
+    canvas c1
+    iconcoords {452.0 894.0}
+    labelcoords {452.0 926.0}
+    interface-peer {eth0 n8}
+}
+
+node n13 {
+    type router
+    model host
+    network-config {
+	hostname FSTracker
+	!
+	interface eth0
+	 ip address 10.0.12.10/24
+	 ipv6 address 2001:12::10/64
+	!
+    }
+    canvas c1
+    iconcoords {98.0 96.0}
+    labelcoords {98.0 128.0}
+    interface-peer {eth0 n7}
+}
+
+node n14 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.15.20/24
+	 ipv6 address 2001:15::20/64
+	!
+    }
+    canvas c1
+    iconcoords {1152.0 906.0}
+    labelcoords {1152.0 938.0}
+    interface-peer {eth0 n10}
+}
+
+node n15 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.16.20/24
+	 ipv6 address 2001:16::20/64
+	!
+    }
+    canvas c1
+    iconcoords {1356.0 846.0}
+    labelcoords {1356.0 878.0}
+    interface-peer {eth0 n10}
+}
+
+node n16 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.14.20/24
+	 ipv6 address 2001:14::20/64
+	!
+    }
+    canvas c1
+    iconcoords {1257.0 203.0}
+    labelcoords {1257.0 235.0}
+    interface-peer {eth0 n9}
+}
+
+node n17 {
+    type router
+    model PC
+    network-config {
+	hostname Node
+	!
+	interface eth0
+	 ip address 10.0.13.20/24
+	 ipv6 address 2001:13::20/64
+	!
+    }
+    canvas c1
+    iconcoords {1204.0 81.0}
+    labelcoords {1204.0 113.0}
+    interface-peer {eth0 n9}
+}
+
+node n18 {
+    type router
+    model host
+    network-config {
+	hostname ns1com
+	!
+	interface eth0
+	 ip address 10.0.17.10/24
+	 ipv6 address 2001:17::10/64
+	!
+    }
+    canvas c1
+    iconcoords {651.0 80.0}
+    labelcoords {651.0 112.0}
+    interface-peer {eth0 n1}
+}
+
+node n19 {
+    type router
+    model host
+    network-config {
+	hostname ns2net
+	!
+	interface eth0
+	 ip address 10.0.18.10/24
+	 ipv6 address 2001:18::10/64
+	!
+    }
+    canvas c1
+    iconcoords {203.0 294.0}
+    labelcoords {203.0 326.0}
+    interface-peer {eth0 n2}
+}
+
+node n20 {
+    type router
+    model host
+    network-config {
+	hostname ns2com
+	!
+	interface eth0
+	 ip address 10.0.19.10/24
+	 ipv6 address 2001:19::10/64
+	!
+    }
+    canvas c1
+    iconcoords {728.0 798.0}
+    labelcoords {728.0 830.0}
+    interface-peer {eth0 n4}
+}
+
+node n21 {
+    type router
+    model host
+    network-config {
+	hostname ns1pt
+	!
+	interface eth0
+	 ip address 10.0.20.10/24
+	 ipv6 address 2001:20::10/64
+	!
+    }
+    canvas c1
+    iconcoords {1320.0 432.0}
+    labelcoords {1320.0 464.0}
+    interface-peer {eth0 n5}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "domain cc.pt" >> /etc/resolv.conf
+	echo "domain cc.net" >> /etc/resolv.conf
+	echo "domain cc.com" >> /etc/resolv.conf
+	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf 
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
+}
+
+node n22 {
+    type router
+    model router
+    network-config {
+	hostname n22
+	!
+	interface eth2
+	 ip address 10.0.25.1/24
+	 ipv6 address 2001:25::1/64
+	!
+	interface eth1
+	 ip address 10.0.24.1/24
+	 ipv6 address 2001:24::1/64
+	!
+	interface eth0
+	 ip address 10.0.21.2/24
+	 ipv6 address 2001:21::2/64
+	!
+    }
+    canvas c1
+    iconcoords {202.0 494.0}
+    labelcoords {202.0 526.0}
+    interface-peer {eth0 n2}
+    interface-peer {eth1 n23}
+    interface-peer {eth2 n3}
+}
+
+node n23 {
+    type router
+    model host
+    network-config {
+	hostname ns2pt
+	!
+	interface eth0
+	 ip address 10.0.24.10/24
+	 ipv6 address 2001:24::10/64
+	!
+    }
+    canvas c1
+    iconcoords {128.0 605.0}
+    labelcoords {128.0 637.0}
+    interface-peer {eth0 n22}
+}
+
+node n24 {
+    type router
+    model host
+    network-config {
+	hostname ns1net
+	!
+	interface eth0
+	 ip address 10.0.23.10/24
+	 ipv6 address 2001:23::10/64
+	!
+    }
+    canvas c1
+    iconcoords {658.0 339.0}
+    labelcoords {658.0 371.0}
+    interface-peer {eth0 n25}
+}
+
+node n25 {
+    type router
+    model router
+    network-config {
+	hostname n25
+	!
+	interface eth2
+	 ip address 10.0.26.1/24
+	 ipv6 address 2001:26::1/64
+	!
+	interface eth1
+	 ip address 10.0.23.1/24
+	 ipv6 address 2001:23::1/64
+	!
+	interface eth0
+	 ip address 10.0.22.2/24
+	 ipv6 address 2001:22::2/64
+	!
+    }
+    canvas c1
+    iconcoords {770.0 479.0}
+    labelcoords {770.0 511.0}
+    interface-peer {eth0 n3}
+    interface-peer {eth1 n24}
+    interface-peer {eth2 n6}
+}
+
+node n26 {
+    type router
+    model host
+    network-config {
+	hostname root
+	!
+	interface eth0
+	 ip address 10.0.27.10/24
+	 ipv6 address 2001:27::10/64
+	!
+    }
+    canvas c1
+    iconcoords {851.0 78.0}
+    labelcoords {851.0 110.0}
+    interface-peer {eth0 n6}
+    services {DefaultRoute SSH StaticRoute UserDefined}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "domain cc.pt" >> /etc/resolv.conf
+	echo "domain cc.net" >> /etc/resolv.conf
+	echo "domain cc.com" >> /etc/resolv.conf
+	echo "nameserver 10.0.27.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf 
+	}
+    }
+}
+
+link l1 {
+    nodes {n1 n2}
+    bandwidth 0
+}
+
+link l2 {
+    nodes {n2 n3}
+    bandwidth 0
+}
+
+link l3 {
+    nodes {n3 n4}
+    bandwidth 0
+}
+
+link l4 {
+    nodes {n4 n5}
+    bandwidth 0
+}
+
+link l5 {
+    nodes {n5 n6}
+    bandwidth 0
+}
+
+link l6 {
+    nodes {n6 n1}
+    bandwidth 0
+}
+
+link l7 {
+    nodes {n7 n1}
+    bandwidth 0
+}
+
+link l8 {
+    nodes {n8 n3}
+    bandwidth 0
+}
+
+link l9 {
+    nodes {n10 n4}
+    bandwidth 0
+}
+
+link l10 {
+    nodes {n9 n6}
+    bandwidth 0
+}
+
+link l11 {
+    nodes {n11 n8}
+    bandwidth 0
+}
+
+link l12 {
+    nodes {n12 n8}
+    bandwidth 0
+}
+
+link l13 {
+    nodes {n7 n13}
+    bandwidth 0
+}
+
+link l14 {
+    nodes {n9 n17}
+    bandwidth 0
+}
+
+link l15 {
+    nodes {n9 n16}
+    bandwidth 0
+}
+
+link l16 {
+    nodes {n10 n14}
+    bandwidth 0
+}
+
+link l17 {
+    nodes {n10 n15}
+    bandwidth 0
+}
+
+link l19 {
+    nodes {n2 n19}
+    bandwidth 0
+}
+
+link l21 {
+    nodes {n5 n21}
+    bandwidth 0
+}
+
+link l18 {
+    nodes {n1 n18}
+    bandwidth 0
+}
+
+link l20 {
+    nodes {n20 n4}
+    bandwidth 0
+}
+
+link l22 {
+    nodes {n2 n22}
+    bandwidth 0
+}
+
+link l23 {
+    nodes {n3 n25}
+    bandwidth 0
+}
+
+link l24 {
+    nodes {n24 n25}
+    bandwidth 0
+}
+
+link l25 {
+    nodes {n22 n23}
+    bandwidth 0
+}
+
+link l26 {
+    nodes {n22 n3}
+    bandwidth 0
+}
+
+link l27 {
+    nodes {n25 n6}
+    bandwidth 0
+}
+
+link l28 {
+    nodes {n26 n6}
+    bandwidth 0
+}
+
+annotation a1 {
+    iconcoords {1015 11 1350 269}
+    type oval
+    label {.net}
+    labelcolor #000000
+    fontfamily {Arial}
+    fontsize {24}
+    color #3663ab
+    width 0
+    border #000000
+    effects {bold}
+    canvas c1
+}
+
+annotation a2 {
+    iconcoords {137 707 540 980}
+    type oval
+    label {.pt}
+    labelcolor #ffffff
+    fontfamily {Arial}
+    fontsize {24}
+    color #616866
+    width 0
+    border black
+    effects {bold}
+    canvas c1
+}
+
+annotation a3 {
+    iconcoords {15 10 371 225}
+    type oval
+    label {.com}
+    labelcolor black
+    fontfamily {Arial}
+    fontsize {24}
+    color #c3843c
+    width 0
+    border black
+    effects {bold}
+    canvas c1
+}
+
+annotation a4 {
+    iconcoords {1019 682 1465 971}
+    type oval
+    label {.com}
+    labelcolor black
+    fontfamily {Arial}
+    fontsize {24}
+    color #c3843c
+    width 0
+    border black
+    effects {bold}
+    canvas c1
+}
+
+canvas c1 {
+    name {Canvas1}
+    refpt {0 0 47.5791667 -122.132322 2.0}
+    scale {150.0}
+    size {1500 1000}
+}
+
+option global {
+    interface_names no
+    ip_addresses yes
+    ipv6_addresses no
+    node_labels yes
+    link_labels yes
+    show_api no
+    background_images no
+    annotations yes
+    grid yes
+    traffic_start 0
+}
+
+option session {
+}
+
