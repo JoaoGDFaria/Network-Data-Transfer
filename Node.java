@@ -11,6 +11,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +27,7 @@ public class Node {
     private DatagramSocket socketUDP;
     private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
-
+    private Map<String,Map<Integer,byte[]>> allNodeFiles;
 
     private ReentrantLock l = new ReentrantLock();
 
@@ -49,13 +50,12 @@ public class Node {
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
         this.socketUDP = socketUDP;
+        this.allNodeFiles = new HashMap<>();
         this.socketTCP = socketTCP;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socketTCP.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
         sendInfoToFS_Tracker(getFilesInfo());
         keepAlive();
-
-
     }
 
 
@@ -67,43 +67,55 @@ public class Node {
     ////////////////////////////////////////////////////
     ////////////////////////////////////////////////////
 
+
+
+    // Vai a cada ficheiro e guarda-o numa hashmap e cria uma mensagem para ser enviada ao FS_Tracker indicando
+    // que blocos é que cada ficheiro possui
     public String getFilesInfo(){
         String payload = "";
-        String previousFileName = "";
         File infoFile = new File(this.pathToFiles);
         File[] allFiles = infoFile.listFiles();
-        //Arrays.sort(allFiles);
+
         for (File file : allFiles){
-            String fName = file.getName();
-            String fileName = fName.substring(0, fName.length()-8);
-            char unitChar = fName.charAt(fName.length()-1);
-            char decimalChar = fName.charAt(fName.length()-2);
+            String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
+            
+            Map<Integer, byte[]> fragmentFile = new HashMap<>();
 
-                if (payload.equals("")){
-                    payload = fileName + ":";
+            Path path = file.toPath();
+            byte[] fileInBytes = null;
 
+            try {
+                fileInBytes = Files.readAllBytes(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }  
 
-                    int blockNumber = (decimalChar - 'a') * 26 + (unitChar - 'a') + 1;
-                    payload += blockNumber;
-                    previousFileName = fileName;
+            payload += fileName + ":";
+
+            int maxPacketSize = 1015;
+            int totalBytes = fileInBytes.length;
+            int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+            //payload += fileName + ":1-"+totalFragments+";";
+            for (int i = 1; i <= totalFragments; i++){
+                int start = (i - 1) * maxPacketSize;
+                int end = i * maxPacketSize;
+                
+                if (end > totalBytes) {
+                    end = totalBytes;
                 }
-                else{
-                    if (fileName.equals(previousFileName)) {
-                        payload += ",";
-                        int blockNumber = (decimalChar - 'a') * 26 + (unitChar - 'a') + 1;
-                        payload += blockNumber;
-                    }
-                    else{
-                        payload += ";"+fileName+":";
-                        int blockNumber = (decimalChar - 'a') * 26 + (unitChar - 'a') + 1;
-                        payload += blockNumber;
-                        previousFileName = fileName;
-                    }
+                
+                fragmentFile.put(i, Arrays.copyOfRange(fileInBytes, start, end));
+                payload += i;
+                if (i!=totalFragments){
+                    payload += ",";
                 }
+            }
+            payload += ";";
+            allNodeFiles.put(fileName, fragmentFile);
         }
-        payload += ";";
-        return payload;
+        return payload;                
     }
+
 
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
@@ -144,6 +156,7 @@ public class Node {
     }
 
 
+    // Responsável por verificar se o nodo nunca perde a conexão com o FS_Tracker
     private Timer timer;
     public void keepAlive(){
         new Thread(() -> {
@@ -174,6 +187,7 @@ public class Node {
     }
 
 
+    // Trata de enviar determinadas mensagens com vários significados e funcionalidades ao FS_Tracker
     public void sendMessageToTracker() throws IOException {
         new Thread(() -> {
 
@@ -221,6 +235,8 @@ public class Node {
         }).start();
     }
 
+
+    // Função responsável por ouvir sempre se existe infomação a ser enviada para esta porta
     public void listenMessageFromTracker() {
         new Thread(() -> {
             String msgFromChat;
@@ -238,6 +254,8 @@ public class Node {
         }).start();
     }
 
+
+    // Responsável por defragmentar informações enviadas pelo FS_Tracker
     public void defragmentationFromFSTracker(String message){
         if (message.startsWith("File")){
             System.out.println(message);
@@ -270,6 +288,7 @@ public class Node {
     }
 
 
+    // Função responsável por receber payload que indica que blocos são necessários de ir buscar a para um determinado Node
     public void getBlocksFromNodes (String payload){
         Map<Integer, List<String>> blocksToRetreive = new HashMap<>();
         String blockNum = "";
@@ -308,19 +327,18 @@ public class Node {
                 ipAdress += payload.charAt(i);
             }
         }
-        //for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
-        //    Integer key = entry.getKey();
-        //    List<String> values = entry.getValue();
+        for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
+            Integer key = entry.getKey();
+            List<String> values = entry.getValue();
 
-            //System.out.println("Key: " + key);  // COLOCAR ATIVO PARA DEMONSTRAR
-            //System.out.println("Values: " + values);  // COLOCAR ATIVO PARA DEMONSTRAR
-        //}
-
-
+            System.out.println("Key: " + key);  // COLOCAR ATIVO PARA DEMONSTRAR
+            System.out.println("Values: " + values);  // COLOCAR ATIVO PARA DEMONSTRAR
+        }
         sendToNodes(blocksToRetreive);
     }
 
 
+    // Responsável por fechar comunicações entre o Node e outros Nodes e FS_Tracker
     public void disconnectNode(){
         killNode=true;
         try{
@@ -393,14 +411,15 @@ public class Node {
 
 
 
+    // Algoritmo que determina que blocos são necessários ir buscar a cada Node
     public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
         Map<String, String> messages = new HashMap<>();
         for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
             String value = entry.getKey().toString(); // número de bloco do ficheiro
-            String key = entry.getValue().get(0); // primeiro ip que contém o bloco
+            String key;
+            key = entry.getValue().get(0); // primeiro ip que contém o bloco
             List<String> allValues = entry.getValue(); // todos os ips que contém o bloco
 
-            
             if (!allValues.contains(ipNode)){
                 if (!messages.containsKey(key)) {
                     messages.put(key, value);
@@ -412,8 +431,8 @@ public class Node {
             }
         
         }
-        for (Map.Entry<String, String> entry : messages.entrySet()) {
 
+        for (Map.Entry<String, String> entry : messages.entrySet()) {
 
             new Thread(() -> {
                 String key = entry.getKey();
@@ -467,6 +486,8 @@ public class Node {
     }
 
 
+
+    // Recebe um payload e determina que blococos são necessários
     public void separateEachFile (String responseFromNode){
         String[] subst = responseFromNode.split("\\|");
         String ipDestino = subst[1];
@@ -474,32 +495,34 @@ public class Node {
         String payload = subst[3];
 
         String[] substrings = payload.split("\\,");
+        List<Integer> blocos = new ArrayList<>();
         for(String info: substrings){
-            String fName = filename+"_bloco"+ (char) ((Integer.parseInt(info) - 1) / 26 % 26 + 'a') + (char) ((Integer.parseInt(info) - 1) % 26 + 'a');
-            sendFiles(fName,ipDestino);
+            blocos.add(Integer.parseInt(info));
         }
+        sendFiles(filename,ipDestino, blocos);
     }
 
 
 
     // Multithread para funcionar em paralelo
-    public void sendFiles(String filename, String ipToSend){
+    public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
         new Thread(() -> {
-            fragmentoAtual.remove(filename);
-            File infoFile = new File(this.pathToFiles+"/"+filename); // File to send
-            Path path = infoFile.toPath();
-            byte[] fileInBytes = null;
+            int lastElement = blocos.get(blocos.size()-1);
+            int lengthFragments = 0;
+            l.lock();
             try{
-                fileInBytes = Files.readAllBytes(path);     // Converte file in bytes
+                fragmentoAtual.remove(filename);
+                for(int frag : blocos){
+                    lengthFragments+=allNodeFiles.get(filename).get(frag).length;
+                }
+                try {
+                    sendMessageToNode("F|"+blocos.get(0)+"|"+lengthFragments+"|"+this.ipNode, ipToSend);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-            catch (IOException e){
-                e.printStackTrace();
-            }
-
-            try {
-                sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
-            } catch (IOException e) {
-                e.printStackTrace();
+            finally{
+                l.unlock();
             }
 
             while (true) {
@@ -514,7 +537,7 @@ public class Node {
                 try{
                     if(!fragmentoAtual.containsKey(filename)){
                         try {
-                            sendMessageToNode("F|"+filename+"|"+fileInBytes.length+"|"+this.ipNode, ipToSend);
+                            sendMessageToNode("F|"+blocos.get(0)+"|"+lengthFragments+"|"+this.ipNode, ipToSend);
                             System.out.println("Resending ..... ACK -> "+ 0); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -529,21 +552,21 @@ public class Node {
                 }
 
             }
-
-            byte[] nameBytes = filename.getBytes();
-
-            int maxPacketSize = 1020-nameBytes.length;
-            int totalBytes = fileInBytes.length;
-            int totalFragments = (int)Math.ceil((double)totalBytes/maxPacketSize);
+            
+            byte[] ipAddressBytes=null;
+            try {
+                ipAddressBytes = InetAddress.getByName(ipNode).getAddress();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
             boolean isLastFragment = false;
-            for (int i = 1; i <= totalFragments; i++){
-                int start = (i - 1) * maxPacketSize;
-                int end = i * maxPacketSize;
-                
+            int i = 0;
+            for (Integer blocknum : blocos){
+                i++;
                 int keepCheck=0;
+
                 // Mensagem com fragmentação (É a última)
-                if (end > totalBytes) {
-                    end = totalBytes;
+                if (blocknum==lastElement) {
                     isLastFragment = true;
                 }
                 byte[] eachMessage = new byte[1024];
@@ -555,9 +578,10 @@ public class Node {
                 }
                 eachMessage[1] = (byte) (i & 0xFF);
                 eachMessage[2] = (byte) ((i >> 8) & 0xFF);
-                eachMessage[3] = (byte)  (filename.length() & 0xFF);
-                System.arraycopy(nameBytes, 0, eachMessage, 4,nameBytes.length);
-                System.arraycopy(fileInBytes, start, eachMessage, 4+nameBytes.length, end-start);
+                System.arraycopy(ipAddressBytes, 0, eachMessage, 3, 4);
+                eachMessage[7] = (byte) (blocos.get(0) & 0xFF);
+                eachMessage[8] = (byte) ((blocos.get(0) >> 8) & 0xFF);
+                System.arraycopy(allNodeFiles.get(fileName).get(blocknum), 0, eachMessage, 9, 1015);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
                     System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
@@ -609,10 +633,19 @@ public class Node {
     public void getFile(byte[] messageFragment){
         int last_fragment = (messageFragment[0]);
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
-        int filenameSize = (messageFragment[3] & 0xFF);
-        String nameFile = new String(messageFragment, 4, filenameSize, StandardCharsets.UTF_8);
-        int aux = 4 + filenameSize;
 
+        byte[] comp = null;
+        String ipAddr = "";
+        System.arraycopy(messageFragment, 3, comp, 0, 4);
+        try {
+            ipAddr = InetAddress.getByAddress(comp).getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        System.out.println(ipAddr);
+
+        int firstBlock = ((messageFragment[7] & 0xFF) | ((messageFragment[8] << 8) & 0xFF00));
+        String nameFile=ipAddr+firstBlock;
 
         int n_seq_esperado;
         l.lock();
@@ -633,7 +666,7 @@ public class Node {
                     int size;
                     l.lock();
                     try{
-                        size = (totalSize.get(nameFile))%(1024-aux);
+                        size = (totalSize.get(nameFile))%(1015);
                         totalSize.remove(nameFile);
                         filesDownloaded.add(nameFile);
                     }
@@ -643,7 +676,7 @@ public class Node {
                     
 
                     byte[] file_info = new byte[size];
-                    System.arraycopy(messageFragment, aux, file_info, 0, size);
+                    System.arraycopy(messageFragment, 9, file_info, 0, size);
 
                     l.lock();
                     try{
@@ -659,8 +692,8 @@ public class Node {
                     
                 }
                 else{
-                    byte[] file_info = new byte[1024-aux];
-                    System.arraycopy(messageFragment, aux, file_info, 0, file_info.length);
+                    byte[] file_info = new byte[1015];
+                    System.arraycopy(messageFragment, 9, file_info, 0, file_info.length);
 
                     l.lock();
                     try{
@@ -737,28 +770,28 @@ public class Node {
                             }
                         }
 
-                        try (FileOutputStream fos = new FileOutputStream(fileName)) {
-                            File infoFile = new File("/home/core/Desktop/Projeto/"+ipNode);
-                            File[] allFiles = infoFile.listFiles();
-                            Arrays.sort(allFiles);
-                            for (File file : allFiles){
-                                if (filesDownloaded.contains(file.getName())){
-                                    
-                                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-                                    // Read from the current file
-                                    byte[] buffer = new byte[4096];
-                                    int bytesRead;
-                                    while ((bytesRead = bis.read(buffer)) != -1) {
-                                        // write to the output file
-                                        fos.write(buffer, 0, bytesRead);
-                                    }
-                                }
-                            }
-
-                        }
-                        catch(IOException e){
-                            e.printStackTrace();
-                        }
+                        //try (FileOutputStream fos = new FileOutputStream(fileName)) {
+                        //    File infoFile = new File("/home/core/Desktop/Projeto/"+ipNode);
+                        //    File[] allFiles = infoFile.listFiles();
+                        //    Arrays.sort(allFiles);
+                        //    for (File file : allFiles){
+                        //        if (filesDownloaded.contains(file.getName())){
+                        //            
+                        //            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+                        //            // Read from the current file
+                        //            byte[] buffer = new byte[4096];
+                        //            int bytesRead;
+                        //            while ((bytesRead = bis.read(buffer)) != -1) {
+                        //                // write to the output file
+                        //                fos.write(buffer, 0, bytesRead);
+                        //            }
+                        //        }
+                        //    }
+                        //
+                        //}
+                        //catch(IOException e){
+                        //    e.printStackTrace();
+                        //}
                         filesDownloaded.clear();
                     }
 
@@ -776,24 +809,21 @@ public class Node {
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
-                            System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
-                            File file = new File ("/home/core/Desktop/Projeto/"+ipNode+"/" + split[1]);
-
+                            String fileName = ipNode+split[1];
+                            System.out.println("Received FileName: " + fileName); // NEEDED FOR DEBBUG
 
                             l.lock();
                             try{
-                                n_sequencia_esperado.put(split[1], 1);
+                                n_sequencia_esperado.put(fileName, 1);
                                 hasStarted.add(split[3]);
-                                totalSize.put(split[1],  Integer.parseInt(split[2]));
-                                outputStream.put(split[1], new FileOutputStream(file));  
-                                ipToSendAKCS.put(split[1], split[3]); // Filename -> ipOrigem 
+                                totalSize.put(fileName,  Integer.parseInt(split[2]));
+                                ipToSendAKCS.put(fileName, split[3]); // fileName -> ipOrigem 
                             }
                             finally{
                                 l.unlock();
                             }
                             
-                            
-                            sendMessageToNode("ACK0|"+split[1], split[3]);
+                            sendMessageToNode("ACK0|"+fileName, split[3]);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
