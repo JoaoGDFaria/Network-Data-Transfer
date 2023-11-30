@@ -1,6 +1,8 @@
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -38,6 +40,8 @@ public class Node {
     private String fileName;
     private boolean hasDownloadStarted = false;
     private Map<String, String> ipToSendAKCS = new HashMap<>();
+
+    private List<String> filesDownloaded = new ArrayList<>();
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -109,7 +113,7 @@ public class Node {
         if (payloadSize<=maxPayload) {
             // Mensagem não fragmentada
             String finalMessage = this.ipNode + "|" + 1 + "|" + payload;
-            //System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
+            // System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
             bufferedToTracker.flush();
@@ -130,7 +134,7 @@ public class Node {
                     // Mensagem com fragmentação (não é a última)
                     message = this.ipNode + "|" + 2 + "|" + payload.substring(start, end);           
                 }
-                //System.out.println("Payload Sent to Tracker: " + message);  // COLOCAR ATIVO PARA DEMONSTRAR
+                // System.out.println("Payload Sent to Tracker: " + message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToTracker.write(message);
                 bufferedToTracker.newLine();
                 bufferedToTracker.flush();
@@ -631,6 +635,7 @@ public class Node {
                     try{
                         size = (totalSize.get(nameFile))%(1024-aux);
                         totalSize.remove(nameFile);
+                        filesDownloaded.add(nameFile);
                     }
                     finally{
                         l.unlock();
@@ -711,8 +716,50 @@ public class Node {
 
 
                     if(hasDownloadStarted && outputStream.isEmpty()){
-                        System.out.println("Download completed!");
                         hasDownloadStarted = false;
+                        System.out.println("Download completed!");
+                        if (!filesDownloaded.isEmpty()){
+                            String fileName = (filesDownloaded.get(0)).substring(0, (filesDownloaded.get(0)).length()-8);
+                            String payload = fileName + ":";
+                            for (String fName: filesDownloaded){
+                                char unitChar = fName.charAt(fName.length()-1);
+                                char decimalChar = fName.charAt(fName.length()-2);
+                                int blockNumber = (decimalChar - 'a') * 26 + (unitChar - 'a') + 1;
+
+                                payload+=blockNumber+",";
+                            }
+                            payload = payload.substring(0, payload.length() - 1) + ";";
+                            System.out.println(payload);
+                            try {
+                                sendInfoToFS_Tracker(payload);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        try (FileOutputStream fos = new FileOutputStream(fileName)) {
+                            File infoFile = new File("/home/core/Desktop/Projeto/"+ipNode);
+                            File[] allFiles = infoFile.listFiles();
+                            Arrays.sort(allFiles);
+                            for (File file : allFiles){
+                                if (filesDownloaded.contains(file.getName())){
+                                    
+                                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+                                    // Read from the current file
+                                    byte[] buffer = new byte[4096];
+                                    int bytesRead;
+                                    while ((bytesRead = bis.read(buffer)) != -1) {
+                                        // write to the output file
+                                        fos.write(buffer, 0, bytesRead);
+                                    }
+                                }
+                            }
+
+                        }
+                        catch(IOException e){
+                            e.printStackTrace();
+                        }
+                        filesDownloaded.clear();
                     }
 
                     try {
@@ -730,7 +777,7 @@ public class Node {
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
                             System.out.println("Received FileName: " + split[1]); // NEEDED FOR DEBBUG
-                            File file = new File ("/home/core/Desktop/Projeto/Test/" + split[1]);
+                            File file = new File ("/home/core/Desktop/Projeto/"+ipNode+"/" + split[1]);
 
 
                             l.lock();
