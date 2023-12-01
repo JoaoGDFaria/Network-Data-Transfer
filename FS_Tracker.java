@@ -216,12 +216,12 @@ public class FS_Tracker {
         for(String bloco : blocos){
             String[] info = bloco.split(":");
             currentFile = info[0];
-            if(info[1].contains(",")){
+            if(info[1].indexOf(',') != -1){
                 String[] blocoInfo = info[1].split(",");
                 for(String numBlock : blocoInfo){
                     insertInfo(currentFile, Integer.parseInt(numBlock), ipNode);
                 }
-            }else{
+            }else if(info[1].indexOf('-') != -1){
                 String[] blo = info[1].split("-");
                 int primeiro = Integer.parseInt(blo[0]);
                 int ultimo = Integer.parseInt(blo[1]);
@@ -229,6 +229,8 @@ public class FS_Tracker {
                     insertInfo(currentFile, i, ipNode);
                 }
                 insertInfo(currentFile, ultimo, ipNode);
+            }else{
+                insertInfo(currentFile, Integer.parseInt(info[1]), ipNode);
             }
         }
     }

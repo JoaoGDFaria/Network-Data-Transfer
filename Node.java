@@ -15,6 +15,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,6 +34,7 @@ public class Node {
 
     // Para UDP
 
+    private List<String> allDownloads = new ArrayList<>();
     private Map<Integer, byte[]> outputBlocks = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
@@ -322,6 +324,7 @@ public class Node {
                 ipAdress += payload.charAt(i);
             }
         }
+        /*
         for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
             Integer key = entry.getKey();
             List<String> values = entry.getValue();
@@ -329,6 +332,7 @@ public class Node {
             System.out.println("Key: " + key);  // COLOCAR ATIVO PARA DEMONSTRAR
             System.out.println("Values: " + values);  // COLOCAR ATIVO PARA DEMONSTRAR
         }
+        */
         sendToNodes(blocksToRetreive);
     }
 
@@ -407,33 +411,95 @@ public class Node {
 
 
     // Algoritmo que determina que blocos são necessários ir buscar a cada Node
-    public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
-        Map<String, String> messages = new HashMap<>();
+    public Map<Integer, String> escolherIP(Map<String, Integer> sortedMap, Map<Integer, List<String>> blocksToRetreive){
+        Map<Integer, String> transfers = new HashMap<>();
+        String ip = "";
+        Integer comparator = -1;
+        Integer temp = -1;
         for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
-            String value = entry.getKey().toString(); // número de bloco do ficheiro
-            String key;
-            key = entry.getValue().get(0); // primeiro ip que contém o bloco
-            List<String> allValues = entry.getValue(); // todos os ips que contém o bloco
+            Integer bloco = entry.getKey();
+            for(String ipAux : entry.getValue()){
 
-            if (!allValues.contains(ipNode)){
-                if (!messages.containsKey(key)) {
-                    messages.put(key, value);
-                }
-                else{
-                    String aux = messages.get(key)+","+value;
-                    messages.put(key, aux);
+                if (sortedMap.containsKey(ipAux)){
+                    temp = sortedMap.get(ipAux);
+                    if(comparator == -1){
+                        comparator = sortedMap.get(ipAux);
+                        ip = ipAux;
+                    }
+                    if(temp < comparator){
+                        comparator = sortedMap.get(ipAux);
+                        ip = ipAux;
+                    }
                 }
             }
-        
+            transfers.put(bloco, ip);
+            for(String ipAux : entry.getValue()){
+                for(Map.Entry<String, Integer> entry2 : sortedMap.entrySet()){
+                    if(entry2.getKey().equals(ipAux) && !entry2.getKey().equals(ip)){
+                        String ipParaPedirBlocos = entry2.getKey();
+                        sortedMap.put(ipParaPedirBlocos, entry2.getValue()-1);
+                    }
+                }
+            }
+            ip = "";
+            comparator = -1;
+            temp = -1;
+        }
+        return transfers;
+    }
+
+
+
+    // Algoritmo que determina que blocos são necessários ir buscar a cada Node
+    public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
+        Map<String, Integer> numDeAparições = new HashMap<>();
+        for(Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()){
+            if (!entry.getValue().contains(ipNode)){
+                for(String ip : entry.getValue()){
+                    if (!numDeAparições.containsKey(ip)){
+                        numDeAparições.put(ip, 1);
+                    }
+                    else{
+                        numDeAparições.put(ip, numDeAparições.get(ip)+1);
+                    }
+                }
+            }
         }
 
-        for (Map.Entry<String, String> entry : messages.entrySet()) {
+
+        // Ordenar por ordem decrescente de número de aparições
+        List<Map.Entry<String, Integer>> list = new ArrayList<>(numDeAparições.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+        Collections.reverse(list);
+        
+        // Voltar a colocar numa hashmap
+        Map<String, Integer> sortedMap = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> entry : list) {
+            sortedMap.put(entry.getKey(), entry.getValue());
+        }
+
+        Map<Integer, String> transfers = escolherIP(sortedMap, blocksToRetreive);
+        Map<String, String> ipEBlocos = new HashMap<>();
+
+        for(Map.Entry<Integer, String> entry : transfers.entrySet()){
+            Integer numbloco = entry.getKey();
+            String ip = entry.getValue();
+            if (!ipEBlocos.containsKey(ip)){
+                ipEBlocos.put(ip, numbloco.toString());
+            }
+            else{
+                String aux = ipEBlocos.get(ip)+","+numbloco.toString();
+                ipEBlocos.put(ip, aux);
+            }
+        }
+
+        for (Map.Entry<String, String> entry : ipEBlocos.entrySet()) {
 
             new Thread(() -> {
-                String key = entry.getKey();
-                String values = entry.getValue();
+                String ipParaPedirBlocos = entry.getKey();
+                String blocosPedidosAoIP = entry.getValue();
                 try{
-                    sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
+                    sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP, ipParaPedirBlocos);
                 }
                 catch (Exception e){
                     e.getMessage();
@@ -450,9 +516,9 @@ public class Node {
 
                     l.lock();
                     try{
-                        if(!hasStarted.contains(key)){
+                        if(!hasStarted.contains(ipParaPedirBlocos)){
                             try {
-                                sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+values, key);
+                                sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP, ipParaPedirBlocos);
                                 System.out.println("Resending Asking For file");
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -469,7 +535,7 @@ public class Node {
                 }
                 l.lock();
                 try{
-                    hasStarted.remove(key);    
+                    hasStarted.remove(ipParaPedirBlocos);    
                 } 
                 finally{
                     l.unlock();
@@ -503,15 +569,12 @@ public class Node {
         new Thread(() -> {
             String fileBlockName=ipToSend+blocos.get(0);
             int lastElement = blocos.get(blocos.size()-1);
-            int lengthFragments = 0;
+            int lengthLast = allNodeFiles.get(filename).get(lastElement).length;
             l.lock();
             try{
                 fragmentoAtual.remove(fileBlockName);
-                for(int frag : blocos){
-                    lengthFragments+=allNodeFiles.get(filename).get(frag).length;
-                }
                 try {
-                    sendMessageToNode("F|"+blocos.get(0)+"|"+lengthFragments+"|"+this.ipNode, ipToSend);
+                    sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -532,7 +595,7 @@ public class Node {
                 try{
                     if(!fragmentoAtual.containsKey(fileBlockName)){
                         try {
-                            sendMessageToNode("F|"+blocos.get(0)+"|"+lengthFragments+"|"+this.ipNode, ipToSend);
+                            sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
                             System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -546,13 +609,6 @@ public class Node {
                     l.unlock();
                 }
 
-            }
-            
-            byte[] ipAddressBytes=null;
-            try {
-                ipAddressBytes = InetAddress.getByName(ipToSend).getAddress();
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
             }
             boolean isLastFragment = false;
             int i = 0;
@@ -581,7 +637,7 @@ public class Node {
                 System.arraycopy(file, 0, eachMessage, 7, file.length);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    //System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
+                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -652,8 +708,7 @@ public class Node {
                     int size;
                     l.lock();
                     try{
-                        size = (totalSize.get(nameFile))%(1017);
-                        totalSize.remove(nameFile);
+                        size = totalSize.get(nameFile);
                         filesDownloaded.add(nameFile);
                     }
                     finally{
@@ -668,14 +723,31 @@ public class Node {
                     try{
                         outputBlocks.put(blocknumber, file_info);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
+
+                        allDownloads.remove(nameFile);
+                        /*
                         System.out.println("Contents of outputBlocks:");
-        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
-            int key = entry.getKey();
-            byte[] value = entry.getValue();
-            System.out.println("Key: " + key + ", Value Length: " + value.length);
-            // You can print the actual content of the byte array if needed
-            // System.out.println("Value: " + Arrays.toString(value));
-        }
+                        int len = 0;
+                        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
+                            int key = entry.getKey();
+                            byte[] value = entry.getValue();
+                            System.out.println("Key: " + key + ", Value Length: " + value.length);
+                            len+=value.length;
+                        }
+
+                        int currentIndex = 0;
+                        byte[] result = new byte[len];
+                        for (byte[] byteArray : outputBlocks.values()) {
+                            System.arraycopy(byteArray, 0, result, currentIndex, byteArray.length);
+                            currentIndex += byteArray.length;
+                        }
+
+                        Path path = Paths.get("/home/core/Desktop/Projeto/"+ipNode,nameFile);
+                        Files.write(path, result);
+                        totalSize.remove(nameFile);
+                        */
+
+
                     }
                     finally{
                         l.unlock();
@@ -709,6 +781,11 @@ public class Node {
             catch (IOException e){
                 e.printStackTrace();
             }
+            //try {
+            //    sendInfoToFS_Tracker(fileName+":"+blocknumber+";");
+            //} catch (IOException e) {
+            //    e.printStackTrace();
+            //}
 
         }
         else{
@@ -737,9 +814,31 @@ public class Node {
                 while (socketTCP.isConnected() && !killNode) {
 
 
-                    //if(hasDownloadStarted && outputStream.isEmpty()){
-                    //    hasDownloadStarted = false;
-                    //    System.out.println("Download completed!");
+                    if(hasDownloadStarted && allDownloads.isEmpty()){
+                        hasDownloadStarted = false;
+                        System.out.println("Download completed!");
+
+                        int len = 0;
+                        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
+                            int key = entry.getKey();
+                            byte[] value = entry.getValue();
+                            System.out.println("Key: " + key + ", Value Length: " + value.length);
+                            len+=value.length;
+                        }
+                        int currentIndex = 0;
+                        byte[] result = new byte[len];
+                        for (byte[] byteArray : outputBlocks.values()) {
+                            System.arraycopy(byteArray, 0, result, currentIndex, byteArray.length);
+                            currentIndex += byteArray.length;
+                        }
+
+                        Path path = Paths.get("/home/core/Desktop/Projeto/"+ipNode,fileName);
+                        try {
+                            Files.write(path, result);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     //    if (!filesDownloaded.isEmpty()){
                     //        String fileName = (filesDownloaded.get(0)).substring(0, (filesDownloaded.get(0)).length()-8);
                     //        String payload = fileName + ":";
@@ -797,6 +896,7 @@ public class Node {
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
+                            hasDownloadStarted = true;
                             String[] split = responsenFromNode.split("\\|");
                             String filename = ipNode+split[1];
                             System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
@@ -816,8 +916,6 @@ public class Node {
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
                             int ack_num = Integer.parseInt(split[0].substring(3));
-
-                            System.out.println("ACK :"+ split[1]);
                             l.lock();
                             try{
                                 fragmentoAtual.put(split[1], ack_num+1);
@@ -828,7 +926,6 @@ public class Node {
                         }
                         // Fragmented messages
                         else{
-                            hasDownloadStarted = true;
                             getFile(receivePacket.getData());
                         }
                     }
