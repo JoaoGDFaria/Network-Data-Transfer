@@ -210,43 +210,26 @@ public class FS_Tracker {
             return;
         }
 
-        Boolean flag = true;
         String currentFile = "";
-        Integer currentBlock = 0;
+        String[] blocos = payload.split(";");
 
-        for(int i = 0; i < payload.length(); i++){
-
-
-            if (payload.charAt(i)==',');
-            else if (payload.charAt(i)==':');
-
-            // Situação de troca de file
-            else if (payload.charAt(i)==';'){
-                currentFile = "";
-                flag = true;
-            }
-
-            // Situação de file
-            else if (flag){
-                currentFile += payload.charAt(i);
-                if (payload.charAt(i+1) == ':'){
-                    flag = false;
+        for(String bloco : blocos){
+            String[] info = bloco.split(":");
+            currentFile = info[0];
+            if(info[1].contains(",")){
+                String[] blocoInfo = info[1].split(",");
+                for(String numBlock : blocoInfo){
+                    insertInfo(currentFile, Integer.parseInt(numBlock), ipNode);
                 }
-            }
-
-            // Situação de bloco
-            else {
-                currentBlock +=  payload.charAt(i) - '0';
-                if (Character.isDigit(payload.charAt(i+1))){
-                    currentBlock *= 10;
+            }else{
+                String[] blo = info[1].split("-");
+                int primeiro = Integer.parseInt(blo[0]);
+                int ultimo = Integer.parseInt(blo[1]);
+                for(int i = primeiro; i < ultimo; i++){
+                    insertInfo(currentFile, i, ipNode);
                 }
-                else{
-                    insertInfo(currentFile,currentBlock,ipNode);
-                    // System.out.printf("%s - %d - %s%n", currentFile, currentBlock, ipNode);
-                    currentBlock = 0;
-                }
+                insertInfo(currentFile, ultimo, ipNode);
             }
-
         }
     }
 
