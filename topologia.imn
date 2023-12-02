@@ -259,8 +259,8 @@ node n9 {
 	!
     }
     canvas c1
-    iconcoords {1094.0 154.0}
-    labelcoords {1094.0 186.0}
+    iconcoords {1121.0 180.0}
+    labelcoords {1121.0 212.0}
     interface-peer {eth0 n6}
     interface-peer {eth1 n17}
     interface-peer {eth2 n16}
@@ -305,8 +305,8 @@ node n11 {
 	!
     }
     canvas c1
-    iconcoords {199.0 870.0}
-    labelcoords {199.0 902.0}
+    iconcoords {204.0 869.0}
+    labelcoords {203.0 901.0}
     interface-peer {eth0 n8}
     custom-config {
 	custom-config-id service:UserDefined
@@ -323,7 +323,12 @@ node n11 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "" >> /etc/resolv.conf 
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
 	}
     }
     services {DefaultRoute UserDefined}
@@ -344,6 +349,30 @@ node n12 {
     iconcoords {451.0 894.0}
     labelcoords {451.0 926.0}
     interface-peer {eth0 n8}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute UserDefined}
 }
 
 node n13 {
@@ -361,6 +390,30 @@ node n13 {
     iconcoords {98.0 96.0}
     labelcoords {98.0 128.0}
     interface-peer {eth0 n7}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
 }
 
 node n14 {
@@ -378,6 +431,29 @@ node n14 {
     iconcoords {1152.0 906.0}
     labelcoords {1152.0 938.0}
     interface-peer {eth0 n10}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute UserDefined}
 }
 
 node n15 {
@@ -395,6 +471,29 @@ node n15 {
     iconcoords {1356.0 846.0}
     labelcoords {1356.0 878.0}
     interface-peer {eth0 n10}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute UserDefined}
 }
 
 node n16 {
@@ -409,9 +508,33 @@ node n16 {
 	!
     }
     canvas c1
-    iconcoords {1257.0 203.0}
-    labelcoords {1257.0 235.0}
+    iconcoords {1289.0 242.0}
+    labelcoords {1289.0 274.0}
     interface-peer {eth0 n9}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute UserDefined}
 }
 
 node n17 {
@@ -426,9 +549,33 @@ node n17 {
 	!
     }
     canvas c1
-    iconcoords {1204.0 81.0}
-    labelcoords {1204.0 113.0}
+    iconcoords {1288.0 85.0}
+    labelcoords {1288.0 117.0}
     interface-peer {eth0 n9}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute UserDefined}
 }
 
 node n18 {
@@ -446,6 +593,31 @@ node n18 {
     iconcoords {651.0 80.0}
     labelcoords {651.0 112.0}
     interface-peer {eth0 n1}
+    services {DefaultRoute SSH UserDefined}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/com/ /etc/bind', '/usr/sbin/named -f -c /etc/bind/com/named.conf -4', )
+	cmddown=('rm -r /etc/bind/com', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
 }
 
 node n19 {
@@ -460,9 +632,34 @@ node n19 {
 	!
     }
     canvas c1
-    iconcoords {203.0 294.0}
-    labelcoords {203.0 326.0}
+    iconcoords {203.0 293.0}
+    labelcoords {203.0 325.0}
     interface-peer {eth0 n2}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/net2 /etc/bind/', '/usr/sbin/named -f -c /etc/bind/net2/named.conf -4', )
+	cmddown=('rm -r /etc/bind/net2', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
 }
 
 node n20 {
@@ -480,6 +677,31 @@ node n20 {
     iconcoords {728.0 798.0}
     labelcoords {728.0 830.0}
     interface-peer {eth0 n4}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/com2/ /etc/bind', '/usr/sbin/named -f -c /etc/bind/com2/named.conf -4', )
+	cmddown=('rm -r /etc/bind/com2', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
 }
 
 node n21 {
@@ -494,15 +716,16 @@ node n21 {
 	!
     }
     canvas c1
-    iconcoords {1320.0 432.0}
-    labelcoords {1320.0 464.0}
+    iconcoords {1320.0 430.0}
+    labelcoords {1320.0 462.0}
     interface-peer {eth0 n5}
     custom-config {
 	custom-config-id service:UserDefined
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/pt /etc/bind/', '/usr/sbin/named -f -c /etc/bind/pt/named.conf -4', )
+	cmddown=('rm -r /etc/bind/pt', )
 	}
     }
     custom-config {
@@ -512,7 +735,12 @@ node n21 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "" >> /etc/resolv.conf 
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
 	}
     }
     services {DefaultRoute SSH UserDefined}
@@ -560,6 +788,31 @@ node n23 {
     iconcoords {128.0 605.0}
     labelcoords {128.0 637.0}
     interface-peer {eth0 n22}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/pt2/ /etc/bind', '/usr/sbin/named -f -c /etc/bind/pt2/named.conf -4', )
+	cmddown=('rm -r /etc/bind/pt2', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
 }
 
 node n24 {
@@ -574,9 +827,31 @@ node n24 {
 	!
     }
     canvas c1
-    iconcoords {658.0 339.0}
-    labelcoords {658.0 371.0}
+    iconcoords {654.0 339.0}
+    labelcoords {654.0 371.0}
     interface-peer {eth0 n25}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	files=('preenche_resolvconf.sh', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp -r /home/core/Desktop/Projeto/bind/net /etc/bind/', '/usr/sbin/named -f -c /etc/bind/net/named.conf -4', )
+	cmddown=('rm -r /etc/bind/net', )
+	}
+    }
+    custom-config {
+	custom-config-id service:UserDefined:preenche_resolvconf.sh
+	custom-command preenche_resolvconf.sh
+	config {
+	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
+	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
+	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "" >> /etc/resolv.conf
+	}
+    }
+    services {DefaultRoute SSH UserDefined}
 }
 
 node n25 {
@@ -647,11 +922,15 @@ link l8 {
 }
 
 link l9 {
+    color Yellow
+    duplicate 15
     nodes {n10 n4}
     bandwidth 0
 }
 
 link l10 {
+    color Magenta
+    ber 10
     nodes {n9 n6}
     bandwidth 0
 }
@@ -742,7 +1021,7 @@ link l27 {
 }
 
 annotation a1 {
-    iconcoords {1015 11 1350 269}
+    iconcoords {1015.0 11.0 1431.0 336.0}
     type oval
     label {.net}
     labelcolor #000000
