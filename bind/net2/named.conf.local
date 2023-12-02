@@ -1,0 +1,19 @@
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+
+zone "cc.net"{
+	type secondary;
+	file "db.cc.net";
+	primaries{10.0.23.10;};
+};
+
+zone "0.10.in-addr.arpa"{
+	type secondary;
+	file "db.0.10";
+	primaries{10.0.23.10;};
+};

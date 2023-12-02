@@ -1,13 +1,16 @@
 acl "trusted"{
-	10.0.20.10;
-	10.0.10.20;
+	10.0.17.10;	//ns1com
+	10.0.19.10; //ns2com
+	10.0.15.20; //node1
+	10.0.16.20; //node2
+	10.0.12.10; //fstracker
 };
 options {
 	directory "/var/cache/bind";
 
 	recursion yes;
-	allow-recursion {trusted;};
-	listen-on {10.0.20.10;};
+	allow-recursion {any;};
+	listen-on {10.0.19.10;};
 	allow-transfer{none;};
 
 	// If there is a firewall between you and nameservers you want

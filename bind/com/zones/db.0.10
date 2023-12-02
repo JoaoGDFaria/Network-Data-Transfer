@@ -1,0 +1,20 @@
+;
+; BIND reverse data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	cc.com. root.cc.com. (
+			      3		; Serial
+			 604800		; Refresh
+			  86400		; Retry
+			2419200		; Expire
+			 604800 )	; Negative Cache TTL
+; name servers
+	IN	NS	ns1.cc.com.
+	IN	NS	ns2.cc.com.
+
+; PTR records
+10.17	IN	PTR	ns1.cc.com.
+10.19	IN	PTR	ns2.cc.com.
+20.15	IN	PTR	node1.cc.com.
+20.16	IN	PTR	node2.cc.com.
+10.12	IN	PTR	fstracker.cc.com.

@@ -8,12 +8,12 @@
 
 zone "cc.pt"{
 	type primary;
-	file "/etc/bind/zones/db.cc.pt";
+	file "/etc/bind/pt/zones/db.cc.pt";
 	allow-transfer{10.0.24.10;};
 };
 
 zone "0.10.in-addr.arpa"{
 	type primary;
-	file "/etc/bind/zones/db.0.10";
+	file "/etc/bind/pt/zones/db.0.10";
 	allow-transfer{10.0.24.10;};
 };
