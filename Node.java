@@ -34,7 +34,7 @@ public class Node {
 
     // Para UDP
 
-    private List<String> allDownloads = new ArrayList<>();
+    private Set<String> allDownloads = new HashSet<>();
     private Map<Integer, byte[]> outputBlocks = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
@@ -452,23 +452,29 @@ public class Node {
 
     // Algoritmo que determina que blocos são necessários ir buscar a cada Node
     public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
-        Map<String, Integer> numDeAparições = new HashMap<>();
-        for(Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()){
-            if (!entry.getValue().contains(ipNode)){
-                for(String ip : entry.getValue()){
-                    if (!numDeAparições.containsKey(ip)){
-                        numDeAparições.put(ip, 1);
-                    }
-                    else{
-                        numDeAparições.put(ip, numDeAparições.get(ip)+1);
+        Map<String, Integer> numDeAparicoes = new HashMap<>();
+        Iterator<Map.Entry<Integer, List<String>>> iterator = blocksToRetreive.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, List<String>> entry = iterator.next();
+
+            if (!entry.getValue().contains(ipNode)) {
+                for (String ip : entry.getValue()) {
+                    if (!numDeAparicoes.containsKey(ip)) {
+                        numDeAparicoes.put(ip, 1);
+                    } else {
+                        numDeAparicoes.put(ip, numDeAparicoes.get(ip) + 1);
                     }
                 }
+            } else {
+                iterator.remove();
             }
+    
         }
 
 
         // Ordenar por ordem decrescente de número de aparições
-        List<Map.Entry<String, Integer>> list = new ArrayList<>(numDeAparições.entrySet());
+        List<Map.Entry<String, Integer>> list = new ArrayList<>(numDeAparicoes.entrySet());
         list.sort(Map.Entry.comparingByValue());
         Collections.reverse(list);
         
@@ -494,7 +500,6 @@ public class Node {
         }
 
         for (Map.Entry<String, String> entry : ipEBlocos.entrySet()) {
-
             new Thread(() -> {
                 String ipParaPedirBlocos = entry.getKey();
                 String blocosPedidosAoIP = entry.getValue();
@@ -596,7 +601,7 @@ public class Node {
                     if(!fragmentoAtual.containsKey(fileBlockName)){
                         try {
                             sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
-                            System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
+                            //System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -633,11 +638,11 @@ public class Node {
                 eachMessage[4] = (byte) ((blocos.get(0) >> 8) & 0xFF);
                 eachMessage[5] = (byte) (blocknum & 0xFF);
                 eachMessage[6] = (byte) ((blocknum >> 8) & 0xFF);
-                byte[] file = allNodeFiles.get("test2").get(blocknum);
+                byte[] file = allNodeFiles.get(filename).get(blocknum);
                 System.arraycopy(file, 0, eachMessage, 7, file.length);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
+                    //System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -667,7 +672,7 @@ public class Node {
                         keepCheck++;
                         try {
                             sendMessageToNodeInBytes(eachMessage,ipToSend);
-                            System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
+                            //System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -781,11 +786,11 @@ public class Node {
             catch (IOException e){
                 e.printStackTrace();
             }
-            //try {
-            //    sendInfoToFS_Tracker(fileName+":"+blocknumber+";");
-            //} catch (IOException e) {
-            //    e.printStackTrace();
-            //}
+            try {
+                sendInfoToFS_Tracker(fileName+":"+blocknumber+";");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
         else{
@@ -891,7 +896,7 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
-                            System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
+                            //System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
                         }
                         // Create the file
@@ -899,9 +904,10 @@ public class Node {
                             hasDownloadStarted = true;
                             String[] split = responsenFromNode.split("\\|");
                             String filename = ipNode+split[1];
-                            System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
+                            //System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
                             l.lock();
                             try{
+                                allDownloads.add(filename);
                                 n_sequencia_esperado.put(filename, 1);
                                 hasStarted.add(split[3]);
                                 totalSize.put(filename,  Integer.parseInt(split[2]));
@@ -946,7 +952,7 @@ public class Node {
             DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
             clientSocket.send(p);
             clientSocket.close();
-            System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
+            //System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
         }
         finally{
             l.unlock();
