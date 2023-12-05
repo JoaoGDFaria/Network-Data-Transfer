@@ -34,6 +34,8 @@ public class Node {
 
     // Para UDP
 
+    private Map<String, String> fullMessages = new HashMap<>(); 
+
     private Set<String> allDownloads = new HashSet<>();
     private Map<Integer, byte[]> outputBlocks = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
@@ -503,51 +505,136 @@ public class Node {
             new Thread(() -> {
                 String ipParaPedirBlocos = entry.getKey();
                 String blocosPedidosAoIP = entry.getValue();
-                try{
-                    sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP, ipParaPedirBlocos);
-                }
-                catch (Exception e){
-                    e.getMessage();
-                }
-
-
-                while (true) {
-
+                String message = "0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP;
+                if (message.length()<=1024){
                     try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
+                        sendMessageToNode(message, ipParaPedirBlocos);
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    while (true) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
 
-                    l.lock();
-                    try{
-                        if(!hasStarted.contains(ipParaPedirBlocos)){
-                            try {
-                                sendMessageToNode("0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP, ipParaPedirBlocos);
+                        l.lock();
+                        try{
+                            if(!hasStarted.contains(ipParaPedirBlocos)){
+                                try {
+                                    sendMessageToNode(message, ipParaPedirBlocos);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                                 System.out.println("Resending Asking For file");
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                            }
+                            else{
+                                break;
                             }
                         }
-                        else{
-                            break;
+                        finally{
+                            l.unlock();
                         }
+                        
                     }
+                    l.lock();
+                    try{
+                        hasStarted.remove(ipParaPedirBlocos);    
+                    } 
                     finally{
                         l.unlock();
                     }
-                    
                 }
-                l.lock();
-                try{
-                    hasStarted.remove(ipParaPedirBlocos);    
-                } 
-                finally{
-                    l.unlock();
+                else{
+                    fragmentToUDPIfNeeded(message, ipParaPedirBlocos);
                 }
                 
             }).start();
             
+        }
+    }
+
+
+
+    public void fragmentToUDPIfNeeded(String messageToSend, String ipToSend){
+        int tamanhoTotalMensagem = messageToSend.length();
+        String[] split = messageToSend.split("\\|");
+        String payload = split[3];
+        int cont = 0;
+        int index = 0;
+        String fileBlockName = split[2];
+        //String fileBlockName = "init"+ipNode+payload.substring(0,payload.indexOf(","));
+        fragmentoAtual.remove(fileBlockName);
+
+        for (int i = 0; i < messageToSend.length(); i++) {
+            if (messageToSend.charAt(i) == '|') {
+                cont++;
+                if (cont == 3) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        String cabecalho = messageToSend.substring(0, index + 1);
+        int tamanhoCabecalho = cabecalho.length();
+        int max_payload_size = 1024 - tamanhoCabecalho - 10;
+
+        // Quantos fragmentos sao necessarios para enviar toda a informacao em pacotes de 1024 bytes
+        int numFragmentos = (int) Math.ceil((double) tamanhoTotalMensagem / max_payload_size);
+
+        cabecalho = '1' + cabecalho.substring(1);
+
+        for (int i = 1; i <= numFragmentos; i++) {
+            int start = (i - 1) * max_payload_size;
+            int end = i * max_payload_size;
+            if (end > payload.length()) {
+                end = payload.length();
+            }
+            if (i == numFragmentos) {
+                cabecalho = '2' + cabecalho.substring(1);
+            }
+            try {
+                sendMessageToNode(cabecalho + i + "|" + payload.substring(start, end), ipToSend);
+                System.out.println("ACK -> "+ (i)); // NEEDED FOR DEBBUG
+            } catch (IOException e) {
+                 e.printStackTrace();
+            }   
+
+
+            int keepCheck=0;
+            int fragNow;
+            while (true) {
+
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                l.lock();                      
+                try{ 
+                    fragNow = fragmentoAtual.getOrDefault(fileBlockName, -1);
+                }
+                finally{
+                    l.unlock();
+                }
+
+                if((i+1)!=fragNow){
+                    if(keepCheck==150) return;
+                    keepCheck++;
+                    try {
+                        sendMessageToNode(cabecalho + i + "|" + payload.substring(start, end),ipToSend);
+                        //System.out.println("Resending ..... ACK -> "+ (i-1));  // NEEDED FOR DEBBUG
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    break;
+                }
+            }
         }
     }
 
@@ -601,7 +688,7 @@ public class Node {
                     if(!fragmentoAtual.containsKey(fileBlockName)){
                         try {
                             sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
-                            //System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
+                            System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -642,7 +729,7 @@ public class Node {
                 System.arraycopy(file, 0, eachMessage, 7, file.length);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
-                    //System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
+                    System.out.println("ACK -> "+ i); // NEEDED FOR DEBBUG
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -672,7 +759,7 @@ public class Node {
                         keepCheck++;
                         try {
                             sendMessageToNodeInBytes(eachMessage,ipToSend);
-                            //System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
+                            System.out.println("Resending ..... ACK -> "+ i);  // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -684,6 +771,94 @@ public class Node {
             }
         }).start();
     }
+
+
+    public void getFragmentedUDP(String payload){
+        String[] split = payload.split("\\|");
+
+        int lastFragment = Integer.parseInt(split[0]);
+        String ipToSendACK = split[1];
+        String name = split[2];
+        String nameFile = name;
+        int numero_sequencia = Integer.parseInt(split[3]);
+        String mensagem = split[4];
+        int n_seq_esperado;
+
+        l.lock();
+        try{
+            n_seq_esperado = n_sequencia_esperado.getOrDefault(nameFile, 1);
+        }
+        finally{
+            l.unlock();
+        }
+
+        if (numero_sequencia == n_seq_esperado){
+
+            try{
+                if (lastFragment == 2){
+
+                    l.lock();
+                    try{
+                        String msg=fullMessages.get(nameFile);
+                        msg+=mensagem;
+                        separateEachFile("0|"+ipToSendACK+"|"+name+"|"+msg);
+                        sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendACK);
+                        allDownloads.remove(nameFile);
+                    }
+                    finally{
+                        l.unlock();
+                    }
+                    
+                }
+                else{
+
+                    l.lock();
+                    try{
+                        String msg ="";
+                        if (numero_sequencia != 1) msg=fullMessages.get(nameFile);
+                        msg+=mensagem;
+                        fullMessages.put(nameFile, msg);
+                        sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendACK);
+                    }
+                    finally{
+                        l.unlock();
+                    }
+
+                }
+
+                l.lock();
+                try{
+                    n_sequencia_esperado.put(nameFile, n_seq_esperado+1);    
+                }
+                finally{
+                    l.unlock();
+                }
+                
+            }
+            catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+        else{
+            l.lock();
+            try{
+                try{
+                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
+                } catch (IOException e){ }
+            }
+            finally{
+                l.unlock();
+            }
+        }
+
+
+    }
+
+
+
+
+
+
 
 
 
@@ -896,15 +1071,18 @@ public class Node {
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
                         // First message
                         if (responsenFromNode.startsWith("0|")){
-                            //System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
+                            System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
+                        }
+                        else if (responsenFromNode.startsWith("1|") || responsenFromNode.startsWith("2|")){
+                            getFragmentedUDP(responsenFromNode);
                         }
                         // Create the file
                         else if (responsenFromNode.startsWith("F|")){
                             hasDownloadStarted = true;
                             String[] split = responsenFromNode.split("\\|");
                             String filename = ipNode+split[1];
-                            //System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
+                            System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
                             l.lock();
                             try{
                                 allDownloads.add(filename);
@@ -952,7 +1130,7 @@ public class Node {
             DatagramPacket p = new DatagramPacket(buf, buf.length, InetAddress.getByName(ipToSend), 9090);
             clientSocket.send(p);
             clientSocket.close();
-            //System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
+            System.out.println("Sent: "+messageToSend); // NEEDED FOR DEBBUG
         }
         finally{
             l.unlock();
