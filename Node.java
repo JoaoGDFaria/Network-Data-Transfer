@@ -136,7 +136,7 @@ public class Node {
                 int start = (i * maxPayload) - maxPayload;
                 int end = i * maxPayload;
                 String message = "";
-                if (end > payloadSize) {
+                if (end >= payloadSize) {
                     end = payloadSize;
                     // Mensagem com fragmentação (É a última)
                     message = this.ipNode + "|" + 3 + "|" + payload.substring(start, end);
@@ -280,7 +280,7 @@ public class Node {
         this.defragmentMessages += payload;
 
         if (Integer.parseInt(fragment) == 0){
-            //System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
+            System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             getBlocksFromNodes(this.defragmentMessages);
             this.defragmentMessages = "";
         }
@@ -501,6 +501,7 @@ public class Node {
             }
         }
 
+        if (ipEBlocos.isEmpty()) System.out.println("You already have that file!");
         for (Map.Entry<String, String> entry : ipEBlocos.entrySet()) {
             new Thread(() -> {
                 String ipParaPedirBlocos = entry.getKey();
@@ -563,8 +564,7 @@ public class Node {
         String payload = split[3];
         int cont = 0;
         int index = 0;
-        String fileBlockName = split[2];
-        //String fileBlockName = "init"+ipNode+payload.substring(0,payload.indexOf(","));
+        String fileBlockName = "i"+ipNode+payload.substring(0,payload.indexOf(","));
         fragmentoAtual.remove(fileBlockName);
 
         for (int i = 0; i < messageToSend.length(); i++) {
@@ -579,7 +579,8 @@ public class Node {
 
         String cabecalho = messageToSend.substring(0, index + 1);
         int tamanhoCabecalho = cabecalho.length();
-        int max_payload_size = 1024 - tamanhoCabecalho - 10;
+        String blocoInicial= payload.substring(0,payload.indexOf(","));
+        int max_payload_size = 1024 - tamanhoCabecalho - 10 - blocoInicial.length();
 
         // Quantos fragmentos sao necessarios para enviar toda a informacao em pacotes de 1024 bytes
         int numFragmentos = (int) Math.ceil((double) tamanhoTotalMensagem / max_payload_size);
@@ -596,7 +597,7 @@ public class Node {
                 cabecalho = '2' + cabecalho.substring(1);
             }
             try {
-                sendMessageToNode(cabecalho + i + "|" + payload.substring(start, end), ipToSend);
+                sendMessageToNode(cabecalho + i + "|" + blocoInicial + "|" + payload.substring(start, end), ipToSend);
                 System.out.println("ACK -> "+ (i)); // NEEDED FOR DEBBUG
             } catch (IOException e) {
                  e.printStackTrace();
@@ -625,7 +626,7 @@ public class Node {
                     if(keepCheck==150) return;
                     keepCheck++;
                     try {
-                        sendMessageToNode(cabecalho + i + "|" + payload.substring(start, end),ipToSend);
+                        sendMessageToNode(cabecalho + i + "|" + blocoInicial + "|" + payload.substring(start, end), ipToSend);
                         //System.out.println("Resending ..... ACK -> "+ (i-1));  // NEEDED FOR DEBBUG
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -779,9 +780,10 @@ public class Node {
         int lastFragment = Integer.parseInt(split[0]);
         String ipToSendACK = split[1];
         String name = split[2];
-        String nameFile = name;
         int numero_sequencia = Integer.parseInt(split[3]);
-        String mensagem = split[4];
+        int blocoIn = Integer.parseInt(split[4]);
+        String nameFile = "i"+ipToSendACK+blocoIn;
+        String mensagem = split[5];
         int n_seq_esperado;
 
         l.lock();
@@ -905,27 +907,6 @@ public class Node {
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
 
                         allDownloads.remove(nameFile);
-                        /*
-                        System.out.println("Contents of outputBlocks:");
-                        int len = 0;
-                        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
-                            int key = entry.getKey();
-                            byte[] value = entry.getValue();
-                            System.out.println("Key: " + key + ", Value Length: " + value.length);
-                            len+=value.length;
-                        }
-
-                        int currentIndex = 0;
-                        byte[] result = new byte[len];
-                        for (byte[] byteArray : outputBlocks.values()) {
-                            System.arraycopy(byteArray, 0, result, currentIndex, byteArray.length);
-                            currentIndex += byteArray.length;
-                        }
-
-                        Path path = Paths.get("/home/core/Desktop/Projeto/"+ipNode,nameFile);
-                        Files.write(path, result);
-                        totalSize.remove(nameFile);
-                        */
 
 
                     }
@@ -1019,49 +1000,7 @@ public class Node {
                             e.printStackTrace();
                         }
                     }
-                    //    if (!filesDownloaded.isEmpty()){
-                    //        String fileName = (filesDownloaded.get(0)).substring(0, (filesDownloaded.get(0)).length()-8);
-                    //        String payload = fileName + ":";
-                    //        for (String fName: filesDownloaded){
-                    //            char unitChar = fName.charAt(fName.length()-1);
-                    //            char decimalChar = fName.charAt(fName.length()-2);
-                    //            int blockNumber = (decimalChar - 'a') * 26 + (unitChar - 'a') + 1;
 
-                    //            payload+=blockNumber+",";
-                    //        }
-                    //        payload = payload.substring(0, payload.length() - 1) + ";";
-                    //        System.out.println(payload);
-                    //        try {
-                    //            sendInfoToFS_Tracker(payload);
-                    //        } catch (IOException e) {
-                    //            e.printStackTrace();
-                    //        }
-                    //    }
-
-                        //try (FileOutputStream fos = new FileOutputStream(fileName)) {
-                        //    File infoFile = new File("/home/core/Desktop/Projeto/"+ipNode);
-                        //    File[] allFiles = infoFile.listFiles();
-                        //    Arrays.sort(allFiles);
-                        //    for (File file : allFiles){
-                        //        if (filesDownloaded.contains(file.getName())){
-                        //            
-                        //            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-                        //            // Read from the current file
-                        //            byte[] buffer = new byte[4096];
-                        //            int bytesRead;
-                        //            while ((bytesRead = bis.read(buffer)) != -1) {
-                        //                // write to the output file
-                        //                fos.write(buffer, 0, bytesRead);
-                        //            }
-                        //        }
-                        //    }
-                        //
-                        //}
-                        //catch(IOException e){
-                        //    e.printStackTrace();
-                        //}
-                    //    filesDownloaded.clear();
-                    //}
 
                     try {
                         byte[] receiveData = new byte[1024];
