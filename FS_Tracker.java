@@ -305,7 +305,7 @@ public class FS_Tracker {
                 int start = (i * maxPayload) - maxPayload;
                 int end = i * maxPayload;
                 String message;
-                if (end > payloadSize) {
+                if (end >= payloadSize) {
                     end = payloadSize;
                     message = "0|" + payload.substring(start, end);
                 }
@@ -313,7 +313,7 @@ public class FS_Tracker {
                     message = "1|" + payload.substring(start, end);  
                 }
                 
-                //System.out.println(message);  // COLOCAR ATIVO PARA DEMONSTRAR
+                System.out.println(message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
                 bufferedToNode.flush();
