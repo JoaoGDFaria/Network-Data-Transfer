@@ -11,6 +11,8 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,9 +38,12 @@ public class Node {
     private Map<String, String> ipToSendAKCS = new HashMap<>();
     private Map<String, Long> rttTimes = new HashMap<>();
 
+    private Map<String, LocalTime> desconexoes = new HashMap<>();
+
 
     private String fileName;
     private boolean hasDownloadStarted = false;
+    private boolean needToDownloadAgain = false;
     private Set<String> allDownloads = new HashSet<>();
     private List<String> hasStarted = new ArrayList<>();
 
@@ -165,7 +170,6 @@ public class Node {
                             bufferedToTracker.newLine();
                             bufferedToTracker.flush();  
                         }
-                        
                     } catch (IOException e) {
                         System.out.println("Socket closed");
                         System.exit(0);
@@ -210,6 +214,7 @@ public class Node {
                 }
                 else if(messageToSend.startsWith("GET ")){
                     try{
+                        downloadStops();
                         fileName = messageToSend.substring(4);
                         bufferedToTracker.write(messageToSend);
                         bufferedToTracker.newLine();
@@ -273,7 +278,7 @@ public class Node {
         this.defragmentMessages += payload;
 
         if (Integer.parseInt(fragment) == 0){
-            System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
+            //System.out.println("\n\n DEFRAGMENTED MESSAGE:  " +this.defragmentMessages +"\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             getBlocksFromNodes(this.defragmentMessages);
             this.defragmentMessages = "";
         }
@@ -662,6 +667,7 @@ public class Node {
     // Multithread para funcionar em paralelo
     public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
         new Thread(() -> {
+            Collections.sort(blocos);
             String fileBlockName;
             int lastElement;
             int lengthLast;
@@ -822,7 +828,6 @@ public class Node {
                         msg+=mensagem;
                         separateEachFile("0|"+ipToSendACK+"|"+name+"|"+msg);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendACK);
-                        allDownloads.remove(nameFile);
                     }
                     finally{
                         l.unlock();
@@ -893,6 +898,7 @@ public class Node {
         byte[] file_info=null;
         l.lock();
         try{
+            desconexoes.put(nameFile, LocalTime.now());
             n_seq_esperado = n_sequencia_esperado.get(nameFile);
         }
         finally{
@@ -1004,36 +1010,7 @@ public class Node {
             public void run() {
                 while (socketTCP.isConnected() && !killNode) {
 
-
-                    if(hasDownloadStarted && allDownloads.isEmpty()){
-                        hasDownloadStarted = false;
-                        System.out.println("Download completed!");
-
-                        int len = 0;
-                        Map<Integer, byte[]> outputBlocks = allNodeFiles.get(fileName);
-                        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
-                            len+=entry.getValue().length;
-                        }
-                        int currentIndex = 0;
-                        byte[] result = new byte[len];
-                        for (byte[] byteArray : outputBlocks.values()) {
-                            System.arraycopy(byteArray, 0, result, currentIndex, byteArray.length);
-                            currentIndex += byteArray.length;
-                        }
-
-                        Path directoryPath = Paths.get("/home/core/Desktop/Projeto", ipNode);
-                        Path filePath = directoryPath.resolve(fileName);
-
-                        // Se o arquivo não existir, crie o diretório e o arquivo
-                        if (!Files.exists(filePath)) {
-                            try {
-                                Files.createDirectories(directoryPath);
-                                Files.write(filePath, result);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
+                    
 
 
                     try {
@@ -1059,6 +1036,7 @@ public class Node {
                             l.lock();
                             try{
                                 allDownloads.add(filename);
+                                desconexoes.put(filename, LocalTime.now());
                                 n_sequencia_esperado.put(filename, 1);
                                 hasStarted.add(split[3]);
                                 totalSize.put(filename,  Integer.parseInt(split[2]));
@@ -1142,7 +1120,90 @@ public class Node {
 
 
 
+    private Timer timer2;
+    public void downloadStops(){
+        new Thread(() -> {
+            timer2 = new Timer();
 
+            TimerTask task = new TimerTask() {
+                
+                @Override
+                public void run() {
+
+                    if(!killNode && !allDownloads.isEmpty()){
+                        LocalTime now = LocalTime.now();
+                        Iterator<Map.Entry<String, LocalTime>> iterator = desconexoes.entrySet().iterator();
+
+                        while (iterator.hasNext()) {
+                            Map.Entry<String, LocalTime> entry = iterator.next();
+                            LocalTime before = entry.getValue();
+                            Duration duration = Duration.between(before, now);
+                            long secondsDifference = duration.getSeconds();
+
+                            if (secondsDifference >= 1) {
+                                iterator.remove();
+                                allDownloads.remove(entry.getKey());
+                                desconexoes.remove(entry.getKey());
+                                needToDownloadAgain=true;
+                                System.out.println("DESCONEXAO");
+                            }
+                        }
+                    }
+                                
+
+                    if(hasDownloadStarted && allDownloads.isEmpty()){
+                        if(needToDownloadAgain) {
+                            desconexoes.clear();
+                            needToDownloadAgain=false;
+                            try {
+                                bufferedToTracker.write("GET "+fileName);
+                                bufferedToTracker.newLine();
+                                bufferedToTracker.flush();
+                                return;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        hasDownloadStarted = false;
+                        System.out.println("Download completed!");
+
+                        int len = 0;
+                        Map<Integer, byte[]> outputBlocks = allNodeFiles.get(fileName);
+                        for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
+                            int key = entry.getKey();
+                            byte[] value = entry.getValue();
+                            System.out.println("Key: " + key + ", Value Length: " + value.length);
+                            len+=value.length;
+                        }
+                        int currentIndex = 0;
+                        byte[] result = new byte[len];
+                        for (byte[] byteArray : outputBlocks.values()) {
+                            System.arraycopy(byteArray, 0, result, currentIndex, byteArray.length);
+                            currentIndex += byteArray.length;
+                        }
+
+                        Path directoryPath = Paths.get("/home/core/Desktop/Projeto", ipNode);
+                        Path filePath = directoryPath.resolve(fileName);
+
+                        // Se o arquivo não existir, crie o diretório e o arquivo
+                        if (!Files.exists(filePath)) {
+                            try {
+                                Files.createDirectories(directoryPath);
+                                Files.write(filePath, result);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        timer2.cancel();
+                        timer2.purge();
+                    }
+                }
+            };
+
+            timer2.scheduleAtFixedRate(task, 500, 500);
+        }).start();
+    }
 
 
 
