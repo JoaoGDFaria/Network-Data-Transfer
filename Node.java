@@ -1,9 +1,6 @@
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -11,8 +8,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,25 +23,24 @@ public class Node {
     private DatagramSocket socketUDP;
     private BufferedReader bufferedFromTracker; // Ler informação enviada pelo servidor
     private BufferedWriter bufferedToTracker; // Ler informação enviada para o servidor
-    private Map<String,Map<Integer,byte[]>> allNodeFiles;
 
     private ReentrantLock l = new ReentrantLock();
 
     // Para UDP
 
+    private Map<String,Map<Integer,byte[]>> allNodeFiles = new HashMap<>(); 
     private Map<String, String> fullMessages = new HashMap<>(); 
-
-    private Set<String> allDownloads = new HashSet<>();
-    private Map<Integer, byte[]> outputBlocks = new HashMap<>();
     private Map<String, Integer> totalSize = new HashMap<>();
     private Map<String, Integer> fragmentoAtual = new HashMap<>();
-    private List<String> hasStarted = new ArrayList<>();
     private Map<String, Integer> n_sequencia_esperado = new HashMap<>();
+    private Map<String, String> ipToSendAKCS = new HashMap<>();
+    private Map<String, Long> rttTimes = new HashMap<>();
+
+
     private String fileName;
     private boolean hasDownloadStarted = false;
-    private Map<String, String> ipToSendAKCS = new HashMap<>();
-
-    private List<String> filesDownloaded = new ArrayList<>();
+    private Set<String> allDownloads = new HashSet<>();
+    private List<String> hasStarted = new ArrayList<>();
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -54,7 +48,6 @@ public class Node {
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
         this.socketUDP = socketUDP;
-        this.allNodeFiles = new HashMap<>();
         this.socketTCP = socketTCP;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socketTCP.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
@@ -565,7 +558,15 @@ public class Node {
         int cont = 0;
         int index = 0;
         String fileBlockName = "i"+ipNode+payload.substring(0,payload.indexOf(","));
-        fragmentoAtual.remove(fileBlockName);
+
+        l.lock();
+        try{
+            fragmentoAtual.remove(fileBlockName);    
+        }
+        finally{
+            l.unlock();
+        }
+        
 
         for (int i = 0; i < messageToSend.length(); i++) {
             if (messageToSend.charAt(i) == '|') {
@@ -609,7 +610,8 @@ public class Node {
             while (true) {
 
                 try {
-                    Thread.sleep(15);
+                    long rtt = rttTimes.getOrDefault(fileBlockName, (long)15);
+                    Thread.sleep(rtt);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -660,11 +662,14 @@ public class Node {
     // Multithread para funcionar em paralelo
     public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
         new Thread(() -> {
-            String fileBlockName=ipToSend+blocos.get(0);
-            int lastElement = blocos.get(blocos.size()-1);
-            int lengthLast = allNodeFiles.get(filename).get(lastElement).length;
+            String fileBlockName;
+            int lastElement;
+            int lengthLast;
             l.lock();
             try{
+                fileBlockName=ipToSend+blocos.get(0);
+                lastElement = blocos.get(blocos.size()-1);
+                lengthLast = allNodeFiles.get(filename).get(lastElement).length;
                 fragmentoAtual.remove(fileBlockName);
                 try {
                     sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
@@ -726,7 +731,18 @@ public class Node {
                 eachMessage[4] = (byte) ((blocos.get(0) >> 8) & 0xFF);
                 eachMessage[5] = (byte) (blocknum & 0xFF);
                 eachMessage[6] = (byte) ((blocknum >> 8) & 0xFF);
-                byte[] file = allNodeFiles.get(filename).get(blocknum);
+
+                byte[] file = null;
+                l.lock();
+                try{
+                    file = allNodeFiles.get(filename).get(blocknum);
+                }
+                finally{
+                    l.unlock();
+                }
+
+
+
                 System.arraycopy(file, 0, eachMessage, 7, file.length);
                 try {
                     sendMessageToNodeInBytes(eachMessage,ipToSend);
@@ -739,7 +755,8 @@ public class Node {
                 while (true) {
 
                     try {
-                        Thread.sleep(15);
+                        long rtt = rttTimes.getOrDefault(fileBlockName, (long)15);
+                        Thread.sleep(rtt);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -845,7 +862,8 @@ public class Node {
             l.lock();
             try{
                 try{
-                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
+                    if (n_seq_esperado-1 == 0) sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile+"|"+System.currentTimeMillis(), ipToSendACK);
+                    else sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
                 } catch (IOException e){ }
             }
             finally{
@@ -872,6 +890,7 @@ public class Node {
         int blocknumber = ((messageFragment[5] & 0xFF) | ((messageFragment[6] << 8) & 0xFF00));
         String nameFile=ipNode+firstBlock;
         int n_seq_esperado;
+        byte[] file_info=null;
         l.lock();
         try{
             n_seq_esperado = n_sequencia_esperado.get(nameFile);
@@ -891,19 +910,17 @@ public class Node {
                     l.lock();
                     try{
                         size = totalSize.get(nameFile);
-                        filesDownloaded.add(nameFile);
                     }
                     finally{
                         l.unlock();
                     }
                     
 
-                    byte[] file_info = new byte[size];
+                    file_info = new byte[size];
                     System.arraycopy(messageFragment, 7, file_info, 0, size);
 
                     l.lock();
                     try{
-                        outputBlocks.put(blocknumber, file_info);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
 
                         allDownloads.remove(nameFile);
@@ -916,12 +933,11 @@ public class Node {
                     
                 }
                 else{
-                    byte[] file_info = new byte[1017];
+                    file_info = new byte[1017];
                     System.arraycopy(messageFragment, 7, file_info, 0, file_info.length);
 
                     l.lock();
                     try{
-                        outputBlocks.put(blocknumber, file_info);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendAKCS.get(nameFile));
                     }
                     finally{
@@ -944,6 +960,19 @@ public class Node {
             }
             try {
                 sendInfoToFS_Tracker(fileName+":"+blocknumber+";");
+
+                l.lock();
+                try{
+                    if (!allNodeFiles.containsKey(fileName)) {
+                        allNodeFiles.put(fileName, new HashMap<>());
+                    }
+                    Map<Integer, byte[]> innerMap = allNodeFiles.get(fileName);
+                    innerMap.put(blocknumber, file_info);
+                    allNodeFiles.put(fileName, innerMap);
+                }
+                finally{
+                    l.unlock();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -953,7 +982,8 @@ public class Node {
             l.lock();
             try{
                 try{
-                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                    if (n_seq_esperado-1 == 0) sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile+"|"+System.currentTimeMillis(), ipToSendAKCS.get(nameFile));
+                    else sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 } catch (IOException e){ }
             }
             finally{
@@ -980,11 +1010,9 @@ public class Node {
                         System.out.println("Download completed!");
 
                         int len = 0;
+                        Map<Integer, byte[]> outputBlocks = allNodeFiles.get(fileName);
                         for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
-                            int key = entry.getKey();
-                            byte[] value = entry.getValue();
-                            System.out.println("Key: " + key + ", Value Length: " + value.length);
-                            len+=value.length;
+                            len+=entry.getValue().length;
                         }
                         int currentIndex = 0;
                         byte[] result = new byte[len];
@@ -993,11 +1021,17 @@ public class Node {
                             currentIndex += byteArray.length;
                         }
 
-                        Path path = Paths.get("/home/core/Desktop/Projeto/"+ipNode,fileName);
-                        try {
-                            Files.write(path, result);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        Path directoryPath = Paths.get("/home/core/Desktop/Projeto", ipNode);
+                        Path filePath = directoryPath.resolve(fileName);
+
+                        // Se o arquivo não existir, crie o diretório e o arquivo
+                        if (!Files.exists(filePath)) {
+                            try {
+                                Files.createDirectories(directoryPath);
+                                Files.write(filePath, result);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
 
@@ -1034,14 +1068,26 @@ public class Node {
                                 l.unlock();
                             }
                             
-                            sendMessageToNode("ACK0|"+filename, split[3]);
+                            sendMessageToNode("ACK0|"+filename+"|"+System.currentTimeMillis(), split[3]);
                         }
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
                             int ack_num = Integer.parseInt(split[0].substring(3));
+                            String fName= split[1];
+
+                            // Calcular RTT
+                            if(ack_num==0){ 
+                                long endtime = System.currentTimeMillis();
+                                long timestamp = Long.parseLong(split[2]);
+
+                                long rtt = (long) ((endtime - timestamp)*2.2);
+                                //rttTimes.put(fName, rtt);
+                                System.out.println("RTT TIMER: "+rtt+"--------------------------------\n\n");
+                            }
+
                             l.lock();
                             try{
-                                fragmentoAtual.put(split[1], ack_num+1);
+                                fragmentoAtual.put(fName, ack_num+1);
                             }
                             finally{
                                 l.unlock();
@@ -1074,7 +1120,6 @@ public class Node {
         finally{
             l.unlock();
         }
-
     }
 
 
