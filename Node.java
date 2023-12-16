@@ -30,22 +30,21 @@ public class Node {
 
     // Para UDP
 
-    private Map<String,Map<Integer,byte[]>> allNodeFiles = new HashMap<>(); 
-    private Map<String, String> fullMessages = new HashMap<>(); 
-    private Map<String, Integer> totalSize = new HashMap<>();
-    private Map<String, Integer> fragmentoAtual = new HashMap<>();
-    private Map<String, Integer> n_sequencia_esperado = new HashMap<>();
-    private Map<String, String> ipToSendAKCS = new HashMap<>();
-    private Map<String, Long> rttTimes = new HashMap<>();
-
-    private Map<String, LocalTime> desconexoes = new HashMap<>();
+    private Map<String,Map<Integer,byte[]>> allNodeFiles = new HashMap<>(); // Responsável por armazenar todos os fragmentos que o nodo possui de diferentes ficheiros
+    private Map<String, String> fullMessages = new HashMap<>(); //Responsável pela fragmentação se existir
+    private Map<String, Integer> totalSize = new HashMap<>(); // Responsável por guardar o tamanho do último fragmento a ser enviado em bytes
+    private Map<String, Integer> fragmentoAtual = new HashMap<>(); // Responsável por guardar o fragmento atual que um determinado download está
+    private Map<String, Integer> n_sequencia_esperado = new HashMap<>(); // Responsável por guardar o número de sequencia esperado de um determinado download
+    private Map<String, String> ipToSendAKCS = new HashMap<>(); // Responsável por identificar o ip do nodo para onde temos de enviar as mensagens de confirmação de rececção de um pacote
+    private Map<String, Long> rttTimes = new HashMap<>(); // Responsável por guardar os RTTs dos vários nodos
+    private Map<String, LocalTime> desconexoes = new HashMap<>(); // Responsável por tratar dos nodos que estão ativos para download
 
 
     private String fileName;
     private boolean hasDownloadStarted = false;
     private boolean needToDownloadAgain = false;
-    private Set<String> allDownloads = new HashSet<>();
-    private List<String> hasStarted = new ArrayList<>();
+    private Set<String> allDownloads = new HashSet<>(); // Responsável por identificar todos os ips onde estamos a ir buscar blocos para download
+    private List<String> hasStarted = new ArrayList<>(); // Responsável por identificar todos os downloads que já começaram
 
 
     public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
@@ -118,15 +117,16 @@ public class Node {
     public void sendInfoToFS_Tracker(String payload) throws IOException{
         int maxPayload = 40;
         int payloadSize = payload.length();
-
+        
+        // Mensagem não fragmentada
         if (payloadSize<=maxPayload) {
-            // Mensagem não fragmentada
-            String finalMessage = ipNode + "|" + 1 + "|" + payload;
+            String finalMessage = this.ipNode + "|" + 1 + "|" + payload;
             // System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
             bufferedToTracker.flush();
         }
+        // Mensagem fragmentada
         else{
             int totalFragments = (int)Math.ceil((double)payloadSize/maxPayload);
 
@@ -191,6 +191,7 @@ public class Node {
             while(socketTCP.isConnected()  && !killNode) {
                 String messageToSend = scanner.nextLine();
 
+                // Pedido de desconexão
                 if (messageToSend.equals("d")){
                     try{
                         bufferedToTracker.write(messageToSend);
@@ -202,6 +203,7 @@ public class Node {
                         System.out.println(e.getMessage());
                     }
                 }
+                // Pedido de consulta de ficheiros e blocos
                 else if(messageToSend.equals("i")){
                     try{
                         bufferedToTracker.write(messageToSend);
@@ -212,6 +214,7 @@ public class Node {
                         System.out.println(e.getMessage());
                     }
                 }
+                // Pedido de download de ficheiro
                 else if(messageToSend.startsWith("GET ")){
                     try{
                         downloadStops();
@@ -324,15 +327,6 @@ public class Node {
                 ipAdress += payload.charAt(i);
             }
         }
-        /*
-        for (Map.Entry<Integer, List<String>> entry : blocksToRetreive.entrySet()) {
-            Integer key = entry.getKey();
-            List<String> values = entry.getValue();
-
-            System.out.println("Key: " + key);  // COLOCAR ATIVO PARA DEMONSTRAR
-            System.out.println("Values: " + values);  // COLOCAR ATIVO PARA DEMONSTRAR
-        }
-        */
         sendToNodes(blocksToRetreive);
     }
 
@@ -555,7 +549,7 @@ public class Node {
     }
 
 
-
+    // Fragmentar as mensagens para um determinado nodo
     public void fragmentToUDPIfNeeded(String messageToSend, String ipToSend){
         int tamanhoTotalMensagem = messageToSend.length();
         String[] split = messageToSend.split("\\|");
@@ -648,7 +642,7 @@ public class Node {
 
 
 
-    // Recebe um payload e determina que blococos são necessários
+    // Recebe um payload e determina que blocos são necessários
     public void separateEachFile (String responseFromNode){
         String[] subst = responseFromNode.split("\\|");
         String ipDestino = subst[1];
@@ -663,7 +657,7 @@ public class Node {
     }
 
 
-
+    // Enviar fragmentos ao nodo que os pediu
     // Multithread para funcionar em paralelo
     public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
         new Thread(() -> {
@@ -797,6 +791,8 @@ public class Node {
     }
 
 
+    // Receber pacotes fragmentados e fazer a verificação se o pacote que recebemos é o correto ou não
+    // Enviar ACKs de resposta
     public void getFragmentedUDP(String payload){
         String[] split = payload.split("\\|");
 
@@ -887,7 +883,8 @@ public class Node {
 
 
 
-
+    // Receber pacotes e fazer a verificação se o pacote que recebemos é o correto ou não
+    // Enviar ACKs de resposta
     public void getFile(byte[] messageFragment){
         int last_fragment = (messageFragment[0]);
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
@@ -1003,7 +1000,7 @@ public class Node {
     
 
 
-
+    // Ouvir mensagens de outros nodes
     public void listenMessageFromNode() {
         new Thread(new Runnable() {
             @Override
@@ -1011,23 +1008,25 @@ public class Node {
                 while (socketTCP.isConnected() && !killNode) {
 
                     
-
-
                     try {
                         byte[] receiveData = new byte[1024];
                         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
                         socketUDP.receive(receivePacket);
                         String responsenFromNode = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                        // First message
+
+                        // Primeira mensagem
                         if (responsenFromNode.startsWith("0|")){
                             System.out.println("Received: " + responsenFromNode); // NEEDED FOR DEBBUG
                             separateEachFile(responsenFromNode);
                         }
+
+                        // Mensagem fragmentada
                         else if (responsenFromNode.startsWith("1|") || responsenFromNode.startsWith("2|")){
                             getFragmentedUDP(responsenFromNode);
                         }
-                        // Create the file
+
+                        // Primeira mensagem que o nodo que pediu download a outro nodo recebe
                         else if (responsenFromNode.startsWith("F|")){
                             hasDownloadStarted = true;
                             String[] split = responsenFromNode.split("\\|");
@@ -1048,6 +1047,8 @@ public class Node {
                             
                             sendMessageToNode("ACK0|"+filename+"|"+System.currentTimeMillis(), split[3]);
                         }
+
+                        // Validação dos ACKs recebidos
                         else if (responsenFromNode.startsWith("ACK")){
                             String[] split = responsenFromNode.split("\\|");
                             int ack_num = Integer.parseInt(split[0].substring(3));
@@ -1071,21 +1072,21 @@ public class Node {
                                 l.unlock();
                             }
                         }
-                        // Fragmented messages
+
+                        // Receber os blocos relativos a um determinado ficheiro
                         else{
                             getFile(receivePacket.getData());
                         }
                     }
                     catch (Exception e) {
-                        //Erro quando disconnect porque a Thread está à espera de resposta linha 1020.
-                        //System.out.println(e.getMessage());
+                        e.printStackTrace();
                     }
                 }
             }
         }).start();
     }
 
-    // IP a quem eu quero enviar uma String
+    // Enviar uma mensagem em String para um nodo
     public void sendMessageToNode(String messageToSend, String ipToSend) throws IOException {
         l.lock();
         try{
@@ -1103,7 +1104,7 @@ public class Node {
 
 
 
-    // IP a quem eu quero enviar uma lista de bytes
+    // Enviar uma mensagem em bytes para um nodo
     public void sendMessageToNodeInBytes(byte[] messageToSend, String ipToSend) throws IOException {
         l.lock();
         try{
@@ -1120,7 +1121,7 @@ public class Node {
 
 
 
-
+    // Timer responsável por verificar se algum nodo se desconecta a meio de um download
     private Timer timer2;
     public void downloadStops(){
         new Thread(() -> {
@@ -1243,13 +1244,13 @@ public class Node {
         DatagramSocket socketUDP = new DatagramSocket(9090);
 
         String pathToFiles;
-        if (ipNode.equals("10.1.1.1")){
+        if (ipNode.equals("132.50.1.20")){
             pathToFiles = "/home/core/Desktop/Projeto/Node1";
         }
-        else if (ipNode.equals("10.2.2.2")){
+        else if (ipNode.equals("192.168.2.20")){
             pathToFiles = "/home/core/Desktop/Projeto/Node2";
         }
-        else if (ipNode.equals("10.2.2.1")){
+        else if (ipNode.equals("192.168.3.20")){
             pathToFiles = "/home/core/Desktop/Projeto/Node3";
         }
         else{
@@ -1262,7 +1263,7 @@ public class Node {
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
         
-        //node.listenMessageFromNode();
+        node.listenMessageFromNode();
     
         
     }
