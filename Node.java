@@ -40,6 +40,7 @@ public class Node {
     private Map<String, LocalTime> desconexoes = new HashMap<>(); // Responsável por tratar dos nodos que estão ativos para download
 
 
+    private List<String> allIpsToSend = new ArrayList<>();
     private String fileName;
     private boolean hasDownloadStarted = false;
     private boolean needToDownloadAgain = false;
@@ -447,6 +448,29 @@ public class Node {
     }
 
 
+    public void getAllRTT (List<String> allIps){
+        for (String ip : allIps){  
+            while(true){
+                if(!rttTimes.containsKey(ip)){
+                    try {
+                        sendMessageToNode("Q|"+ipNode+"|"+System.currentTimeMillis(), ip);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{
+                    break;
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println(rttTimes.get(ip));
+        }
+    }
+
 
     // Algoritmo que determina que blocos são necessários ir buscar a cada Node
     public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
@@ -480,7 +504,12 @@ public class Node {
         Map<String, Integer> sortedMap = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : list) {
             sortedMap.put(entry.getKey(), entry.getValue());
+            allIpsToSend.add(entry.getKey());
         }
+
+        getAllRTT(allIpsToSend);
+
+
 
         Map<Integer, String> transfers = escolherIP(sortedMap, blocksToRetreive);
         Map<String, String> ipEBlocos = new HashMap<>();
@@ -614,7 +643,7 @@ public class Node {
             while (true) {
 
                 try {
-                    long rtt = rttTimes.getOrDefault(fileBlockName, (long)15);
+                    long rtt = rttTimes.get(ipToSend);
                     Thread.sleep(rtt);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -758,9 +787,8 @@ public class Node {
 
                 int fragNow;
                 while (true) {
-
                     try {
-                        long rtt = rttTimes.getOrDefault(fileBlockName, (long)15);
+                        long rtt = rttTimes.get(ipToSend);
                         Thread.sleep(rtt);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -868,8 +896,7 @@ public class Node {
             l.lock();
             try{
                 try{
-                    if (n_seq_esperado-1 == 0) sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile+"|"+System.currentTimeMillis(), ipToSendACK);
-                    else sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
+                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
                 } catch (IOException e){ }
             }
             finally{
@@ -990,8 +1017,7 @@ public class Node {
             l.lock();
             try{
                 try{
-                    if (n_seq_esperado-1 == 0) sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile+"|"+System.currentTimeMillis(), ipToSendAKCS.get(nameFile));
-                    else sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
+                    sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendAKCS.get(nameFile));
                 } catch (IOException e){ }
             }
             finally{
@@ -1050,7 +1076,7 @@ public class Node {
                                 l.unlock();
                             }
                             
-                            sendMessageToNode("ACK0|"+filename+"|"+System.currentTimeMillis(), split[3]);
+                            sendMessageToNode("ACK0|"+filename, split[3]);
                         }
 
                         // Validação dos ACKs recebidos
@@ -1059,16 +1085,6 @@ public class Node {
                             int ack_num = Integer.parseInt(split[0].substring(3));
                             String fName= split[1];
 
-                            // Calcular RTT
-                            if(ack_num==0){ 
-                                long endtime = System.currentTimeMillis();
-                                long timestamp = Long.parseLong(split[2]);
-
-                                long rtt = (long) ((endtime - timestamp)*2.2);
-                                //rttTimes.put(fName, rtt);
-                                System.out.println("RTT TIMER: "+rtt+"--------------------------------\n\n");
-                            }
-
                             l.lock();
                             try{
                                 fragmentoAtual.put(fName, ack_num+1);
@@ -1076,6 +1092,24 @@ public class Node {
                             finally{
                                 l.unlock();
                             }
+                        }
+
+                        else if (responsenFromNode.startsWith("Q") || responsenFromNode.startsWith("A")){
+                            String[] split = responsenFromNode.split("\\|");
+                            String ip = split[1];
+                            long endtime = System.currentTimeMillis();
+                            long timestamp = Long.parseLong(split[2]);
+                            long rtt = (long) ((endtime - timestamp)*2.2);
+
+                            l.lock();
+                            try{
+                                if(!rttTimes.containsKey(ip)) rttTimes.put(ip, rtt);    
+                            }
+                            finally{
+                                l.unlock();
+                            }
+
+                            if (responsenFromNode.startsWith("Q")) sendMessageToNode("A|"+ipNode+"|"+System.currentTimeMillis(), ip);
                         }
 
                         // Receber os blocos relativos a um determinado ficheiro
