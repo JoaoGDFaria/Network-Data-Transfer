@@ -15,6 +15,3 @@ $TTL	604800
 ; PTR records
 10.17	IN	PTR	ns1.cc.com.
 10.19	IN	PTR	ns2.cc.com.
-20.15	IN	PTR	node1.cc.com.
-20.16	IN	PTR	node2.cc.com.
-10.12	IN	PTR	fstracker.cc.com.

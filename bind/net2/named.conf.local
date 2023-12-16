@@ -12,6 +12,12 @@ zone "cc.net"{
 	primaries{10.0.23.10;};
 };
 
+zone "16.172.in-addr.arpa"{
+	type primary;
+	file "db.16.172";
+	primaries{10.0.23.10;};
+};
+
 zone "0.10.in-addr.arpa"{
 	type secondary;
 	file "db.0.10";

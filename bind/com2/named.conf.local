@@ -9,11 +9,17 @@
 zone "cc.com"{
 	type secondary;
 	file "db.cc.com";
-	primaries{10.0.19.10;};
+	primaries{10.0.17.10;};
+};
+
+zone "168.192.in-addr.arpa"{
+	type primary;
+	file "db.168.192";
+	primaries{10.0.17.10;};
 };
 
 zone "0.10.in-addr.arpa"{
 	type secondary;
 	file "db.0.10";
-	primaries{10.0.19.10;};
+	primaries{10.0.17.10;};
 };

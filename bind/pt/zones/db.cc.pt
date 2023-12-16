@@ -17,5 +17,5 @@ ns1.cc.pt.	IN	A	10.0.20.10
 ns2.cc.pt.	IN	A	10.0.24.10
 
 ; 
-node1.cc.pt.	IN	A	10.0.10.20
-node2.cc.pt.	IN	A	10.0.11.20
+node1.cc.pt.	IN	A	132.50.1.20
+node2.cc.pt.	IN	A	132.50.2.20

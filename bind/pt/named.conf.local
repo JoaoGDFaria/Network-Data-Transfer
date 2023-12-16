@@ -12,6 +12,12 @@ zone "cc.pt"{
 	allow-transfer{10.0.24.10;};
 };
 
+zone "50.132.in-addr.arpa"{
+	type primary;
+	file "/etc/bind/pt/zones/db.50.132";
+	allow-transfer{10.0.24.10;};
+};
+
 zone "0.10.in-addr.arpa"{
 	type primary;
 	file "/etc/bind/pt/zones/db.0.10";

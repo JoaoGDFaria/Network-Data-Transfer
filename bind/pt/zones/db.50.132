@@ -13,5 +13,5 @@ $TTL	604800
 	IN	NS	ns2.cc.pt.
 
 ; PTR records
-10.20	IN	PTR	ns1.cc.pt.
-10.24	IN	PTR	ns2.cc.pt.
+20.1	IN	PTR	node1.cc.pt.
+20.2	IN	PTR	node2.cc.pt.

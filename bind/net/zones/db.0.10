@@ -15,5 +15,3 @@ $TTL	604800
 ; PTR records
 10.23	IN	PTR	ns1.cc.net.
 10.18	IN	PTR	ns2.cc.net.
-20.13	IN	PTR	node1.cc.net.
-20.14	IN	PTR	node2.cc.net.

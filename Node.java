@@ -118,10 +118,10 @@ public class Node {
     public void sendInfoToFS_Tracker(String payload) throws IOException{
         int maxPayload = 40;
         int payloadSize = payload.length();
-        
+
         if (payloadSize<=maxPayload) {
             // Mensagem não fragmentada
-            String finalMessage = this.ipNode + "|" + 1 + "|" + payload;
+            String finalMessage = ipNode + "|" + 1 + "|" + payload;
             // System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
@@ -1077,7 +1077,8 @@ public class Node {
                         }
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        //Erro quando disconnect porque a Thread está à espera de resposta linha 1020.
+                        //System.out.println(e.getMessage());
                     }
                 }
             }
@@ -1234,7 +1235,9 @@ public class Node {
 
 
     public static void main (String[] args) throws IOException{
-        Socket socketTCP = new Socket("10.4.4.1",9090); //"localhost"
+        InetAddress address = InetAddress.getByName("fstracker.cc.com");
+        String trackerIP = address.getHostAddress();
+        Socket socketTCP = new Socket(trackerIP, 9090); //"localhost"
         String ipNode = socketTCP.getLocalAddress().toString().substring(1);
 
         DatagramSocket socketUDP = new DatagramSocket(9090);
@@ -1259,7 +1262,7 @@ public class Node {
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
         
-        node.listenMessageFromNode();
+        //node.listenMessageFromNode();
     
         
     }

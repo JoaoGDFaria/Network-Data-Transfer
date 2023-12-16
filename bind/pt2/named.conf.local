@@ -12,6 +12,12 @@ zone "cc.pt"{
 	primaries{10.0.20.10;};
 };
 
+zone "50.132.in-addr.arpa"{
+	type secondary;
+	file "db.50.132";
+	primaries{10.0.20.10;};
+};
+
 zone "0.10.in-addr.arpa"{
 	type secondary;
 	file "db.0.10";

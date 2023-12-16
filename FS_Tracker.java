@@ -32,7 +32,7 @@ public class FS_Tracker {
 
     private void startFS_Tracker(Integer port) throws IOException {
         ServerSocket tracker_socket = new ServerSocket(port);
-        System.out.println("Servidor ativo em 10.0.0.10 porta " + tracker_socket.getLocalPort() + ".\n");
+        System.out.println("Servidor ativo em 192.164.4.10 porta " + tracker_socket.getLocalPort() + ".\n");
 
         checkAlive();
 
@@ -162,7 +162,7 @@ public class FS_Tracker {
         }
     }
 
-    public String ipAdressNode(String mensagem){
+    public String ipAddressNode(String mensagem){
         String ipNode = "";
         for(int i = 0; i < mensagem.length(); i++) {
             if (mensagem.charAt(i)=='|'){

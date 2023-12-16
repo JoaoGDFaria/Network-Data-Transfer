@@ -17,6 +17,6 @@ ns1.cc.com.	IN	A	10.0.17.10
 ns2.cc.com.	IN	A	10.0.19.10
 
 ; 
-node1.cc.com.	IN	A	10.0.15.20
-node2.cc.com.	IN	A	10.0.16.20
-fstracker.cc.com.	IN	A	10.0.12.10
+node1.cc.com.	IN	A	192.168.2.20
+node2.cc.com.	IN	A	192.168.3.20
+fstracker.cc.com.	IN	A	192.168.4.10

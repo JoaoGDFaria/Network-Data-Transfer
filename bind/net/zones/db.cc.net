@@ -17,5 +17,5 @@ ns1.cc.net.	IN	A	10.0.23.10
 ns2.cc.net.	IN	A	10.0.18.10
 
 ; 
-node1.cc.net.	IN	A	10.0.13.20
-node2.cc.net.	IN	A	10.0.14.20
+node1.cc.net.	IN	A	172.16.1.20
+node2.cc.net.	IN	A	172.16.2.20

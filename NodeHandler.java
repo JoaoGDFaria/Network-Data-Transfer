@@ -17,7 +17,7 @@ class NodeHandler extends Thread{
         this.bufferedFromNode = new BufferedReader(new InputStreamReader(socket.getInputStream())); // Receber
         this.tracker = tracker;
         String messageReceived = bufferedFromNode.readLine();
-        this.ipAddress = tracker.ipAdressNode(messageReceived);
+        this.ipAddress = tracker.ipAddressNode(messageReceived);
 
         System.out.println("Node " + ipAddress + " is connected.");
         //System.out.println(messageReceived);  // COLOCAR ATIVO PARA DEMONSTRAR

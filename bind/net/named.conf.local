@@ -12,6 +12,12 @@ zone "cc.net"{
 	allow-transfer{10.0.18.10;};
 };
 
+zone "16.172.in-addr.arpa"{
+	type primary;
+	file "/etc/bind/net/zones/db.16.172";
+	allow-transfer{10.0.18.10;};
+};
+
 zone "0.10.in-addr.arpa"{
 	type primary;
 	file "/etc/bind/net/zones/db.0.10";
