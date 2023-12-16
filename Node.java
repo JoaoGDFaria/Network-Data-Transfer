@@ -55,8 +55,12 @@ public class Node {
         this.socketTCP = socketTCP;
         this.bufferedToTracker = new BufferedWriter(new OutputStreamWriter(socketTCP.getOutputStream())); // Enviar 
         this.bufferedFromTracker = new BufferedReader(new InputStreamReader(socketTCP.getInputStream())); // Receber
-        sendInfoToFS_Tracker(getFilesInfo());
+        String msg = getFilesInfo();
+        if (msg != ""){
+            sendInfoToFS_Tracker(msg);
+        }
         keepAlive();
+        System.out.println("Ready to interact with network...");
     }
 
 
@@ -78,7 +82,7 @@ public class Node {
         File[] allFiles = infoFile.listFiles();
 
         for (File file : allFiles){
-            String fileName = file.getName().substring(0, file.getName().lastIndexOf('.'));
+            String fileName = file.getName();
             
             Map<Integer, byte[]> fragmentFile = new HashMap<>();
 
@@ -115,7 +119,7 @@ public class Node {
 
     // Envio de informação para o FS_Tracker com fragmentação de pacotes, se necessário
     public void sendInfoToFS_Tracker(String payload) throws IOException{
-        int maxPayload = 40;
+        int maxPayload = 1024;
         int payloadSize = payload.length();
         
         // Mensagem não fragmentada
@@ -578,6 +582,7 @@ public class Node {
         }
 
         String cabecalho = messageToSend.substring(0, index + 1);
+        System.out.println(cabecalho);
         int tamanhoCabecalho = cabecalho.length();
         String blocoInicial= payload.substring(0,payload.indexOf(","));
         int max_payload_size = 1024 - tamanhoCabecalho - 10 - blocoInicial.length();
@@ -1142,12 +1147,12 @@ public class Node {
                             Duration duration = Duration.between(before, now);
                             long secondsDifference = duration.getSeconds();
 
-                            if (secondsDifference >= 1) {
+                            if (secondsDifference >= 3) {
                                 iterator.remove();
                                 allDownloads.remove(entry.getKey());
                                 desconexoes.remove(entry.getKey());
                                 needToDownloadAgain=true;
-                                System.out.println("DESCONEXAO");
+                                System.out.println("DESCONEXAO"+entry.getKey());
                             }
                         }
                     }
@@ -1172,10 +1177,7 @@ public class Node {
                         int len = 0;
                         Map<Integer, byte[]> outputBlocks = allNodeFiles.get(fileName);
                         for (Map.Entry<Integer, byte[]> entry : outputBlocks.entrySet()) {
-                            int key = entry.getKey();
-                            byte[] value = entry.getValue();
-                            System.out.println("Key: " + key + ", Value Length: " + value.length);
-                            len+=value.length;
+                            len+=entry.getValue().length;
                         }
                         int currentIndex = 0;
                         byte[] result = new byte[len];
@@ -1258,7 +1260,7 @@ public class Node {
         }
 
 
-        System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.\n");
+        System.out.println("Conexão FS TrProtocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.\n");
         Node node = new Node(ipNode, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
