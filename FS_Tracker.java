@@ -337,7 +337,7 @@ public class FS_Tracker {
 
                     result.append("File: ").append(fileName)
                             .append(", Block: ").append(blockNumber)
-                            .append(", IPs: ").append(ipList).append("\n");
+                            .append(", Hosts: ").append(ipList).append("\n");
                 }
             }
             if(result.length() == 0) System.out.println("VAZIO");

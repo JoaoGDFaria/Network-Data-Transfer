@@ -23,3 +23,27 @@ zone "0.10.in-addr.arpa"{
 	file "/etc/bind/com/zones/db.0.10";
 	allow-transfer{10.0.19.10;};
 };
+
+zone "cc.pt"{
+	type forward;
+	forward only;
+	forwarders{10.0.20.10;};
+};
+
+zone "50.132.in-addr.arpa"{
+	type forward;
+	forward only;
+	forwarders{10.0.20.10;};
+};
+
+zone "cc.net"{
+	type forward;
+	forward only;
+	forwarders{10.0.23.10;};
+};
+
+zone "16.172.in-addr.arpa"{
+	type forward;
+	forward only;
+	forwarders{10.0.23.10;};
+};

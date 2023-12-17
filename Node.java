@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Node {
     private String ipNode;
+    private String hostname;
     private boolean killNode = false;
     private String pathToFiles;
     private String defragmentMessages;
@@ -48,8 +49,9 @@ public class Node {
     private List<String> hasStarted = new ArrayList<>();
 
 
-    public Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
+    public Node(String ip, String hostname, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
         this.ipNode = ip;
+        this.hostname = hostname;
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
         this.socketUDP = socketUDP;
@@ -121,7 +123,7 @@ public class Node {
 
         if (payloadSize<=maxPayload) {
             // Mensagem não fragmentada
-            String finalMessage = ipNode + "|" + 1 + "|" + payload;
+            String finalMessage = hostname + "|" + 1 + "|" + payload;
             // System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
@@ -137,13 +139,13 @@ public class Node {
                 if (end >= payloadSize) {
                     end = payloadSize;
                     // Mensagem com fragmentação (É a última)
-                    message = this.ipNode + "|" + 3 + "|" + payload.substring(start, end);
+                    message = hostname + "|" + 3 + "|" + payload.substring(start, end);
                 }
                 else{
                     // Mensagem com fragmentação (não é a última)
-                    message = this.ipNode + "|" + 2 + "|" + payload.substring(start, end);           
+                    message = hostname + "|" + 2 + "|" + payload.substring(start, end);           
                 }
-                // System.out.println("Payload Sent to Tracker: " + message);  // COLOCAR ATIVO PARA DEMONSTRAR
+                //System.out.println("Payload Sent to Tracker: " + message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToTracker.write(message);
                 bufferedToTracker.newLine();
                 bufferedToTracker.flush();
@@ -166,7 +168,7 @@ public class Node {
                     try {
                         if (!killNode){
                             // Keep Alive
-                            bufferedToTracker.write(ipNode + "|0");
+                            bufferedToTracker.write(hostname + "|0");
                             bufferedToTracker.newLine();
                             bufferedToTracker.flush();  
                         }
@@ -1240,36 +1242,25 @@ public class Node {
         Socket socketTCP = new Socket(trackerIP, 9090); //"localhost"
         String ipNode = socketTCP.getLocalAddress().toString().substring(1);
 
+        String parts[] = ipNode.split("\\.");
+        int p1 = Integer.valueOf(parts[0]);
+        int p2 = Integer.valueOf(parts[1]);
+        int p3 = Integer.valueOf(parts[2]);
+        int p4 = Integer.valueOf(parts[3]);
+
+        byte[] hostip = {(byte)p1, (byte)p2, (byte)p3, (byte)p4};
+        InetAddress hostAddress = InetAddress.getByAddress(hostip);
+        String hostname = hostAddress.getHostName();
+
         DatagramSocket socketUDP = new DatagramSocket(9090);
 
-        String pathToFiles;
-        if (ipNode.equals("10.1.1.1")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node1";
-        }
-        else if (ipNode.equals("10.2.2.2")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node2";
-        }
-        else if (ipNode.equals("10.2.2.1")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node3";
-        }
-        else{
-            pathToFiles = "/home/core/Desktop/Projeto/Node4";
-        }
+        String pathToFiles = "./files";
 
-
-        System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.\n");
-        Node node = new Node(ipNode, socketTCP, pathToFiles, socketUDP);
+        System.out.println("Conexão FS Track Protocol com servidor fstracker.cc.com porta 9090.\n");
+        Node node = new Node(ipNode, hostname, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
-        
-        //node.listenMessageFromNode();
-    
-        
+
+        node.listenMessageFromNode();
     }
-
 }
-
-
-
-
-

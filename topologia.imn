@@ -202,8 +202,8 @@ node n18 {
 	!
     }
     canvas c1
-    iconcoords {651.0 80.0}
-    labelcoords {651.0 112.0}
+    iconcoords {651.0 84.0}
+    labelcoords {651.0 116.0}
     interface-peer {eth0 n1}
     services {DefaultRoute SSH UserDefined}
     custom-config {
@@ -222,11 +222,8 @@ node n18 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -263,11 +260,8 @@ node n19 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -305,11 +299,8 @@ node n20 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -347,11 +338,8 @@ node n21 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -416,11 +404,8 @@ node n23 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -540,7 +525,7 @@ node n8 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -550,8 +535,7 @@ node n8 {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
 	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -578,7 +562,7 @@ node n9 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -616,7 +600,7 @@ node n10 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -625,9 +609,8 @@ node n10 {
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
-	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -654,7 +637,7 @@ node n11 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -663,9 +646,8 @@ node n11 {
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
-	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -692,7 +674,7 @@ node n12 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/fstracker.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Tracker.jar ./', )
 	}
     }
     custom-config {
@@ -701,9 +683,8 @@ node n12 {
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
-	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.24.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.19.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -806,7 +787,7 @@ node n16 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -815,9 +796,8 @@ node n16 {
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
-	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
@@ -844,7 +824,7 @@ node n17 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
 	}
     }
     custom-config {
@@ -853,9 +833,8 @@ node n17 {
 	config {
 	echo "# -- gerado pela script de arranque..." >> /etc/resolv.conf
 	echo "search cc.pt cc.com cc.net" >> /etc/resolv.conf
-	echo "nameserver 10.0.20.10" >> /etc/resolv.conf
-	echo "nameserver 10.0.17.10" >> /etc/resolv.conf
 	echo "nameserver 10.0.23.10" >> /etc/resolv.conf
+	echo "nameserver 10.0.18.10" >> /etc/resolv.conf
 	echo "" >> /etc/resolv.conf
 	}
     }
