@@ -525,7 +525,7 @@ node n8 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
@@ -562,7 +562,7 @@ node n9 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
@@ -600,7 +600,7 @@ node n10 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
@@ -637,7 +637,7 @@ node n11 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
@@ -787,7 +787,7 @@ node n16 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
@@ -824,7 +824,7 @@ node n17 {
 	custom-command UserDefined
 	config {
 	files=('preenche_resolvconf.sh', )
-	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/Node.jar ./', )
+	cmdup=('mkdir -p /run/systemd/resolve', 'touch /run/systemd/resolve/stub-resolv.conf', 'sh preenche_resolvconf.sh', 'cp /home/core/Desktop/Projeto/FS_Node.jar ./', )
 	}
     }
     custom-config {
