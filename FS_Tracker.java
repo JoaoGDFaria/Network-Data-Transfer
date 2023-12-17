@@ -9,27 +9,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * CLASS FS_TRACKER - Servidor tracker
  */
 public class FS_Tracker {
 
-    private Map<String, Map<Integer, List<String>>> fileMemory;
-    private Map<String, String> defragmentMessages;
-    private Map<String, LocalTime> timeStamps;
-    private Map<String, Socket> sockets;
+    private Map<String, Map<Integer, List<String>>> fileMemory; // responsável por guardar os filenames, blocos que cada filename tem e os ips associados a cada um deles
+    private Map<String, String> defragmentMessages; // responsável por guardar as mensagens que vão sendo defragmentadas por ordem até obter obter o último pacote
+    private Map<String, LocalTime> timeStamps; // responsávelo por guardar os ips que estão ativos, devido ao mecanismo keepAlive
 
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private ReentrantLock lock = new ReentrantLock();
 
     public FS_Tracker(){
         this.fileMemory = new HashMap<>();
         this.timeStamps = new HashMap<>();
         this.defragmentMessages = new HashMap<>();
-        this.sockets = new HashMap<>();
     }
 
+    // A cada nova conexão de um novo node, fazer accept dessa determinada socket
     private void startFS_Tracker(Integer port) throws IOException {
         ServerSocket tracker_socket = new ServerSocket(port);
         System.out.println("Servidor ativo em 192.164.4.10 porta " + tracker_socket.getLocalPort() + ".\n");
@@ -41,6 +40,7 @@ public class FS_Tracker {
         }
     }
 
+    // Verificar de 3 em 3 segundos se algum nodo deixa de comunicar com o tracker, se acontecer desconectá-lo da rede
     public void checkAlive(){
         new Thread(() -> {
             Timer timer = new Timer();
@@ -56,18 +56,20 @@ public class FS_Tracker {
         }).start();
     }
 
+    // Inserir o novo timestamp do nodo
     public void insertTimeStamps(LocalTime time, String ipNode){
+        lock.lock();
         try{
-            lock.writeLock().lock();
             this.timeStamps.put(ipNode, time);
         }finally{
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
+    // Verificar todos os timestamps atuais de cada nodo e se tiverem passado 3 segundos, então remové-lo da rede
     public void verifyTimeStamp(){
+        lock.lock();
         try{
-            lock.writeLock().lock();
             LocalTime now = LocalTime.now();
             Iterator<Map.Entry<String, LocalTime>> iterator = this.timeStamps.entrySet().iterator();
 
@@ -83,26 +85,14 @@ public class FS_Tracker {
                 }
             }
         }finally{
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
+    // Desconectar um respetivo nodo da rede
     public void deleteDisconnectedNode(String ipDisc){
+        lock.lock();
         try{
-            lock.writeLock().lock();
-
-            if(this.sockets.containsKey(ipDisc)){
-                Socket socket = this.sockets.get(ipDisc);
-                this.sockets.remove(ipDisc);
-                if(!socket.isClosed()){
-                    try{
-                        socket.close();
-                    }catch (IOException a){
-                        a.printStackTrace();
-                    }
-                }
-            }
-
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()){
                 Map<Integer, List<String>> blockMap = entry.getValue();
 
@@ -113,11 +103,12 @@ public class FS_Tracker {
             }
             timeStamps.remove(ipDisc);
         }finally{
-            lock.writeLock().unlock();
+            lock.unlock();
             System.out.println("Node " + ipDisc + " has been disconnected");
         }
     }
 
+    // Inserir informações na hash fileMemory
     public void insertInfo(String fileName, Integer blockNumber, String ipNode){
         insertTimeStamps(LocalTime.now(), ipNode);
 
@@ -125,8 +116,8 @@ public class FS_Tracker {
             return;
         }
 
+        lock.lock();
         try{
-            lock.writeLock().lock();
             if (!fileMemory.containsKey(fileName)) fileMemory.put(fileName, new HashMap<>());
             Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
 
@@ -139,29 +130,11 @@ public class FS_Tracker {
                 fileMemory.put(fileName, blockMap);
             }
         }finally{
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
-    public void sendIPBack(String fileName, Integer blockNumber){
-        try{
-            lock.readLock().lock();
-            Map<Integer, List<String>> blockMap = fileMemory.get(fileName);
-            List<String> IPs = blockMap.get(blockNumber);
-
-            if(IPs.size()>1) {
-                String used = IPs.get(0);
-                IPs.remove(0);
-                IPs.add(used);
-            }
-
-            blockMap.put(blockNumber, IPs);
-            fileMemory.put(fileName, blockMap);
-        }finally{
-            lock.readLock().unlock();
-        }
-    }
-
+    // Descobrir o ip do nodo que se está a comunicar connosco através da mensagem inicial
     public String ipAddressNode(String mensagem){
         String ipNode = "";
         for(int i = 0; i < mensagem.length(); i++) {
@@ -204,12 +177,13 @@ public class FS_Tracker {
             insertInfo("null", 0, ipNode);
             return;
         } 
-        // Defragment message
+        // Defragmentar mensagem
         else if (!fragmentNumber.equals("1")){
             defragmentationFromNode(ipNode, payload, fragmentNumber);
             return;
         }
 
+        // Parse da informação a colocar na hash fileMemory
         String currentFile = "";
         String[] blocos = payload.split(";");
 
@@ -235,9 +209,10 @@ public class FS_Tracker {
         }
     }
 
+    // Responsável por receber mensagens fragmentadas e inseri-las na hash table de fragmentação por ordem até receber a última mensagem
     public void defragmentationFromNode(String ipNode, String payload, String fragInfo){
+        lock.lock();
         try{
-            lock.writeLock().lock();
             if (!this.defragmentMessages.containsKey(ipNode)) this.defragmentMessages.put(ipNode, "");
             String blocksIP = this.defragmentMessages.get(ipNode);
 
@@ -251,12 +226,13 @@ public class FS_Tracker {
                 messageParser(ipNode + "|1|" +finalMessage);
             }
         }finally{
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
+    // Procurar na hash dos ficheiros, se existe o ficheiro que o nodo pediu, se existe então retornar os pacotes, senão retornar "ERROR"
     public String pickFile(String fileName, BufferedWriter bufferedToNode) throws IOException{
-        lock.readLock().lock();
+        lock.lock();
         String messageToSend = "";
         try{
             Map<Integer, List<String>> blockMap = this.fileMemory.get(fileName);
@@ -277,7 +253,7 @@ public class FS_Tracker {
                 }
             }
         }finally{
-            lock.readLock().unlock();
+            lock.unlock();
         }
         return messageToSend;
     }
@@ -288,12 +264,11 @@ public class FS_Tracker {
         if (payload.equals("ERROR")){
             return;
         }
-        int maxPayload = 30;
+        int maxPayload = 1024;
         int payloadSize = payload.length();
         
         if (payloadSize<=maxPayload) {
             String finalMessage = "0|" + payload;
-            //System.out.println(finalMessage);  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToNode.write(finalMessage);
             bufferedToNode.newLine();
             bufferedToNode.flush();
@@ -313,7 +288,6 @@ public class FS_Tracker {
                     message = "1|" + payload.substring(start, end);  
                 }
                 
-                System.out.println(message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToNode.write(message);
                 bufferedToNode.newLine();
                 bufferedToNode.flush();
@@ -322,9 +296,10 @@ public class FS_Tracker {
         }
     }
 
+    // Print dos conteúdos da hashtable fileMemory
     public void memoryToString() {
+        lock.lock();
         try{
-            lock.readLock().lock();
             StringBuilder result = new StringBuilder();
 
             for (Map.Entry<String, Map<Integer, List<String>>> entry : fileMemory.entrySet()) {
@@ -345,13 +320,14 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
+    // Print dos conteúdos da hashtable timeStamps
     public void timeToString(){
+        lock.lock();
         try{
-            lock.readLock().lock();
             StringBuilder result = new StringBuilder();
 
             for(Map.Entry<String, LocalTime> entry : timeStamps.entrySet()){
@@ -366,12 +342,8 @@ public class FS_Tracker {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }finally{
-            lock.readLock().unlock();
+            lock.unlock();
         }
-    }
-
-    public void adicionaSocket(Socket socket, String ip){
-        this.sockets.put(ip, socket);
     }
 
     public static void main(String args[]) throws IOException{

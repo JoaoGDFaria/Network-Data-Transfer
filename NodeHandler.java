@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 
 /**
- * CLASS HANDLER - Trata de pedidos de um cliente
+ * CLASS HANDLER - Trata de pedidos de um cliente específico
  */
 class NodeHandler extends Thread{
     private Socket socket;                   // Conecção entre cliente e servidor
@@ -20,15 +20,16 @@ class NodeHandler extends Thread{
         this.ipAddress = tracker.ipAddressNode(messageReceived);
 
         System.out.println("Node " + ipAddress + " is connected.");
-        //System.out.println(messageReceived);  // COLOCAR ATIVO PARA DEMONSTRAR
         tracker.messageParser(messageReceived);
     }
+
 
     public void run(){
         try{
             while(socket.isConnected()){
                 String req = bufferedFromNode.readLine();
 
+                // Se por algum motivo os buffers não estiverem ativos fechar as sockets
                 if(req == null){
                     bufferedFromNode.close();
                     bufferedToNode.close();
@@ -36,12 +37,16 @@ class NodeHandler extends Thread{
                     break;
                 }
 
-                // Disconnect node from FSTracker
+                // Disconectar o nodo manualmente do FSTracker
                 if (req.charAt(0) == 'd'){
                     this.tracker.deleteDisconnectedNode(this.ipAddress);
+                    bufferedFromNode.close();
+                    bufferedToNode.close();
+                    socket.close();
                     break;
                 }
                 else{
+                    // Pedir ao FS_Tracker que mostre todos os ficheiros e blocos que possui assim como os respetivos ips
                     if (req.charAt(0) == 'i'){
                         this.tracker.memoryToString();
                         System.out.println("##############");
@@ -49,16 +54,17 @@ class NodeHandler extends Thread{
                         System.out.println("##############");
                         System.out.println("##############");
                         System.out.println("##############\n");
-                    }else if (req.length() >= 5 && req.startsWith("GET ")){
+                    }
+                    // Pedir ao FS_Tracker que envie para o nodo informação relativa a um ficheiro em concreto (caso exista)
+                    else if (req.length() >= 5 && req.startsWith("GET ")){
                         String messageToNode = this.tracker.pickFile(req.substring(4), bufferedToNode);
                         this.tracker.sendInfoToNode(messageToNode,bufferedToNode);
-                    }else{
-                        this.tracker.messageParser(req);
-                        //System.out.println(req);  // COLOCAR ATIVO PARA DEMONSTRAR
                     }
-                    //System.out.println(req); 
+                    // Caso nenhum acima se aplique tratar cada mensagem dentro da função messageParser
+                    else{
+                        this.tracker.messageParser(req);
+                    }
                 }
-
             }
         }catch(IOException e){
             System.out.println("ERRO HANDLER: " + e.getMessage());
