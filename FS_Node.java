@@ -1320,6 +1320,16 @@ public class FS_Node {
 
     public static void main (String[] args) throws IOException{
 
+        if (args.length > 0) {
+            System.out.print("Path fornecido para download:");
+
+            for (int i = 0; i < args.length; i++) {
+                System.out.print(args[i]);
+            }
+        } else {
+            System.out.println("Nenhum path fornecido para download.");
+        }
+
         int numeroMaximoDeThreads = 20;
         // Configurar o número máximo de threads em paralelo
         System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(numeroMaximoDeThreads));
