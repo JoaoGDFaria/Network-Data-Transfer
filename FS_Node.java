@@ -19,7 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FS_Node {
-    private String ipNode;
+    private String hostname;
     private boolean killNode = false;
     private String pathToFiles;
     private String defragmentMessages;
@@ -49,8 +49,8 @@ public class FS_Node {
     private List<String> hasStarted = new ArrayList<>(); // Responsável por identificar todos os downloads que já começaram
 
 
-    public FS_Node(String ip, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
-        this.ipNode = ip;
+    public FS_Node(String hostname, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
+        this.hostname = hostname;
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
         this.socketUDP = socketUDP;
@@ -126,7 +126,7 @@ public class FS_Node {
         
         // Mensagem não fragmentada
         if (payloadSize<=maxPayload) {
-            String finalMessage = this.ipNode + "|" + 1 + "|" + payload;
+            String finalMessage = this.hostname + "|" + 1 + "|" + payload;
             // System.out.print("Payload Sent to Tracker: " + finalMessage + "\n\n");  // COLOCAR ATIVO PARA DEMONSTRAR
             bufferedToTracker.write(finalMessage);
             bufferedToTracker.newLine();
@@ -143,11 +143,11 @@ public class FS_Node {
                 if (end >= payloadSize) {
                     end = payloadSize;
                     // Mensagem com fragmentação (É a última)
-                    message = this.ipNode + "|" + 3 + "|" + payload.substring(start, end);
+                    message = this.hostname + "|" + 3 + "|" + payload.substring(start, end);
                 }
                 else{
                     // Mensagem com fragmentação (não é a última)
-                    message = this.ipNode + "|" + 2 + "|" + payload.substring(start, end);           
+                    message = this.hostname + "|" + 2 + "|" + payload.substring(start, end);           
                 }
                 // System.out.println("Payload Sent to Tracker: " + message);  // COLOCAR ATIVO PARA DEMONSTRAR
                 bufferedToTracker.write(message);
@@ -172,7 +172,7 @@ public class FS_Node {
                     try {
                         if (!killNode){
                             // Keep Alive
-                            bufferedToTracker.write(ipNode + "|0");
+                            bufferedToTracker.write(hostname + "|0");
                             bufferedToTracker.newLine();
                             bufferedToTracker.flush();  
                         }
@@ -469,7 +469,7 @@ public class FS_Node {
             while(true){
                 if(!rttTimes.containsKey(ip)){
                     try {
-                        sendMessageToNode("Q|"+ipNode+"|"+System.currentTimeMillis(), ip);
+                        sendMessageToNode("Q|"+hostname+"|"+System.currentTimeMillis(), ip);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -497,7 +497,7 @@ public class FS_Node {
         while (iterator.hasNext()) {
             Map.Entry<Integer, List<String>> entry = iterator.next();
 
-            if (!entry.getValue().contains(ipNode)) {
+            if (!entry.getValue().contains(hostname)) {
                 for (String ip : entry.getValue()) {
                     if (!numDeAparicoes.containsKey(ip)) {
                         numDeAparicoes.put(ip, 1);
@@ -554,7 +554,7 @@ public class FS_Node {
             new Thread(() -> {
                 String ipParaPedirBlocos = entry.getKey();
                 String blocosPedidosAoIP = entry.getValue();
-                String message = "0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP;
+                String message = "0|"+hostname+"|"+fileName+"|"+blocosPedidosAoIP;
                 if (message.length()<=1024){
                     try {
                         sendMessageToNode(message, ipParaPedirBlocos);
@@ -612,7 +612,7 @@ public class FS_Node {
         String payload = split[3];
         int cont = 0;
         int index = 0;
-        String fileBlockName = "i"+ipNode+payload.substring(0,payload.indexOf(","));
+        String fileBlockName = "i"+hostname+payload.substring(0,payload.indexOf(","));
         l.lock();
         try{
             fragmentoAtual.remove(fileBlockName);    
@@ -734,7 +734,7 @@ public class FS_Node {
                 lengthLast = allNodeFiles.get(filename).get(lastElement).length;
                 fragmentoAtual.remove(fileBlockName);
                 try {
-                    sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
+                    sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.hostname, ipToSend);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -757,7 +757,7 @@ public class FS_Node {
                 try{
                     if(!fragmentoAtual.containsKey(fileBlockName)){
                         try {
-                            sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
+                            sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.hostname, ipToSend);
                             //System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -961,7 +961,7 @@ public class FS_Node {
         int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
         int firstBlock = ((messageFragment[3] & 0xFF) | ((messageFragment[4] << 8) & 0xFF00));
         int blocknumber = ((messageFragment[5] & 0xFF) | ((messageFragment[6] << 8) & 0xFF00));
-        String nameFile=ipNode+firstBlock;
+        String nameFile=hostname+firstBlock;
         int n_seq_esperado;
         byte[] file_info=null;
         l.lock();
@@ -1096,7 +1096,7 @@ public class FS_Node {
                         // Primeira mensagem que o nodo que pediu download a outro nodo recebe
                         else if (responsenFromNode.startsWith("F|")){
                             String[] split = responsenFromNode.split("\\|");
-                            String filename = ipNode+split[1];
+                            String filename = hostname+split[1];
                             //System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
                             l.lock();
                             try{
@@ -1147,7 +1147,7 @@ public class FS_Node {
                                 l.unlock();
                             }
 
-                           sendMessageToNode("A|"+ipNode+"|"+rtt, ip);
+                           sendMessageToNode("A|"+hostname+"|"+rtt, ip);
                         }
 
                         else if (responsenFromNode.startsWith("A")){
@@ -1235,7 +1235,7 @@ public class FS_Node {
                                 iterator.remove();
                                 desconexoes.remove(entry.getKey());
                                 needToDownloadAgain=true;
-                                System.out.println("DESCONEXAO"+entry.getKey());
+                                System.out.println("Desconexão");
                             }
                         }
                     }
@@ -1338,11 +1338,21 @@ public class FS_Node {
         Socket socketTCP = new Socket(trackerIP, 9090); //"localhost"
         String ipNode = socketTCP.getLocalAddress().toString().substring(1);
 
+        String parts[] = ipNode.split("\\.");
+        int p1 = Integer.valueOf(parts[0]);
+        int p2 = Integer.valueOf(parts[1]);
+        int p3 = Integer.valueOf(parts[2]);
+        int p4 = Integer.valueOf(parts[3]);
+
+        byte[] hostip = {(byte)p1, (byte)p2, (byte)p3, (byte)p4};
+        InetAddress hostAddress = InetAddress.getByAddress(hostip);
+        String hostname = hostAddress.getHostName();
+
         DatagramSocket socketUDP = new DatagramSocket(9090);
 
-        System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.");
+        System.out.println("Conexão FS Track Protocol com servidor fstracker.cc.com porta 9090.");
         System.out.println("FS Transfer Protocol: à escuta na porta 9090.\n");
-        FS_Node node = new FS_Node(ipNode, socketTCP, pathToFiles, socketUDP);
+        FS_Node node = new FS_Node(hostname, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
         

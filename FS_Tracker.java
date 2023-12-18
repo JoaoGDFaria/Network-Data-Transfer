@@ -31,7 +31,7 @@ public class FS_Tracker {
     // A cada nova conexão de um novo node, fazer accept dessa determinada socket
     private void startFS_Tracker(Integer port) throws IOException {
         ServerSocket tracker_socket = new ServerSocket(port);
-        System.out.println("Servidor ativo em 192.164.4.10 porta " + tracker_socket.getLocalPort() + ".\n");
+        System.out.println("Servidor ativo em fstracker.cc.com porta " + tracker_socket.getLocalPort() + ".\n");
 
         checkAlive();
 
@@ -312,7 +312,7 @@ public class FS_Tracker {
 
                     result.append("File: ").append(fileName)
                             .append(", Block: ").append(blockNumber)
-                            .append(", IPs: ").append(ipList).append("\n");
+                            .append(", NodeNames: ").append(ipList).append("\n");
                 }
             }
             if(result.length() == 0) System.out.println("VAZIO");
@@ -324,7 +324,7 @@ public class FS_Tracker {
         }
     }
 
-    // Print dos conteúdos da hashtable timeStamps
+    // Print dos conteúdos da hashtable timeFStamps
     public void timeToString(){
         lock.lock();
         try{
@@ -334,7 +334,7 @@ public class FS_Tracker {
                 String ipName = entry.getKey();
                 String time = entry.getValue().toString();
 
-                result.append("IP: ").append(ipName)
+                result.append("NodeName: ").append(ipName)
                         .append(", Time: ").append(time).append("\n");
             }
             if(result.length() == 0) System.out.println("VAZIO");
