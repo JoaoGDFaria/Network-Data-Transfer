@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FS_Node {
-    private String ipNode;
     private String hostname;
     private boolean killNode = false;
     private String pathToFiles;
@@ -48,8 +47,7 @@ public class FS_Node {
     private List<String> hasStarted = new ArrayList<>(); // Responsável por identificar todos os downloads que já começaram
 
 
-    public FS_Node(String ip, String hostname, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
-        this.ipNode = ip;
+    public FS_Node(String hostname, Socket socketTCP, String pathToFiles, DatagramSocket socketUDP) throws IOException{
         this.hostname = hostname;
         this.defragmentMessages = "";
         this.pathToFiles = pathToFiles;
@@ -472,7 +470,7 @@ public void getAllRTT (List<String> allIps){
         while(true){
             if(!rttTimes.containsKey(ip)){
                 try {
-                    sendMessageToNode("Q|"+ipNode+"|"+System.currentTimeMillis(), ip);
+                    sendMessageToNode("Q|"+hostname+"|"+System.currentTimeMillis(), ip);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -499,7 +497,7 @@ public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
     while (iterator.hasNext()) {
         Map.Entry<Integer, List<String>> entry = iterator.next();
 
-        if (!entry.getValue().contains(ipNode)) {
+        if (!entry.getValue().contains(hostname)) {
             for (String ip : entry.getValue()) {
                 if (!numDeAparicoes.containsKey(ip)) {
                     numDeAparicoes.put(ip, 1);
@@ -555,7 +553,7 @@ public void sendToNodes (Map<Integer, List<String>> blocksToRetreive){
         new Thread(() -> {
             String ipParaPedirBlocos = entry.getKey();
             String blocosPedidosAoIP = entry.getValue();
-            String message = "0|"+ipNode+"|"+fileName+"|"+blocosPedidosAoIP;
+            String message = "0|"+hostname+"|"+fileName+"|"+blocosPedidosAoIP;
             if (message.length()<=1024){
                 try {
                     sendMessageToNode(message, ipParaPedirBlocos);
@@ -612,7 +610,7 @@ public void fragmentToUDPIfNeeded(String messageToSend, String ipToSend){
     String payload = split[3];
     int cont = 0;
     int index = 0;
-    String fileBlockName = "i"+ipNode+payload.substring(0,payload.indexOf(","));
+    String fileBlockName = "i"+hostname+payload.substring(0,payload.indexOf(","));
 
     l.lock();
     try{
@@ -732,7 +730,7 @@ public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
             lengthLast = allNodeFiles.get(filename).get(lastElement).length;
             fragmentoAtual.remove(fileBlockName);
             try {
-                sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
+                sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.hostname, ipToSend);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -755,7 +753,7 @@ public void sendFiles(String filename, String ipToSend, List<Integer> blocos){
             try{
                 if(!fragmentoAtual.containsKey(fileBlockName)){
                     try {
-                        sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.ipNode, ipToSend);
+                        sendMessageToNode("F|"+blocos.get(0)+"|"+lengthLast+"|"+this.hostname, ipToSend);
                         //System.out.println("Resending ..... F "); // NEEDED FOR DEBBUG
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -952,7 +950,7 @@ public void getFile(byte[] messageFragment){
     int numero_sequencia = ((messageFragment[1] & 0xFF) | ((messageFragment[2] << 8) & 0xFF00));
     int firstBlock = ((messageFragment[3] & 0xFF) | ((messageFragment[4] << 8) & 0xFF00));
     int blocknumber = ((messageFragment[5] & 0xFF) | ((messageFragment[6] << 8) & 0xFF00));
-    String nameFile=ipNode+firstBlock;
+    String nameFile=hostname+firstBlock;
     int n_seq_esperado;
     byte[] file_info=null;
     l.lock();
@@ -1088,7 +1086,7 @@ public void listenMessageFromNode() {
                     // Primeira mensagem que o nodo que pediu download a outro nodo recebe
                     else if (responsenFromNode.startsWith("F|")){
                         String[] split = responsenFromNode.split("\\|");
-                        String filename = ipNode+split[1];
+                        String filename = hostname+split[1];
                         //System.out.println("Received FileName: " + filename); // NEEDED FOR DEBBUG
                         l.lock();
                         try{
@@ -1137,7 +1135,7 @@ public void listenMessageFromNode() {
                             l.unlock();
                         }
 
-                        sendMessageToNode("A|"+ipNode+"|"+rtt, ip);
+                        sendMessageToNode("A|"+hostname+"|"+rtt, ip);
                     }
 
                     else if (responsenFromNode.startsWith("A")){
@@ -1260,7 +1258,7 @@ public void downloadStops(){
                         currentIndex += byteArray.length;
                     }
 
-                    Path directoryPath = Paths.get("/home/core/Desktop/Projeto", ipNode);
+                    Path directoryPath = Paths.get("/home/core/Desktop/Projeto", hostname);
                     Path filePath = directoryPath.resolve(fileName);
 
                     // Se o arquivo não existir, crie o diretório e o arquivo
@@ -1330,13 +1328,13 @@ public void downloadStops(){
         DatagramSocket socketUDP = new DatagramSocket(9090);
 
         String pathToFiles;
-        if (ipNode.equals("132.50.1.20")){
+        if (hostname.equals("node1.cc.pt")){
             pathToFiles = "/home/core/Desktop/Projeto/Node1";
         }
-        else if (ipNode.equals("192.168.2.20")){
+        else if (hostname.equals("node1.cc.com")){
             pathToFiles = "/home/core/Desktop/Projeto/Node2";
         }
-        else if (ipNode.equals("192.168.3.20")){
+        else if (hostname.equals("node2.cc.com")){
             pathToFiles = "/home/core/Desktop/Projeto/Node3";
         }
         else{
@@ -1345,7 +1343,7 @@ public void downloadStops(){
 
         System.out.println("Conexão FS Track Protocol com servidor fstracker.cc.com porta 9090.\n");
         System.out.println("FS Transfer Protocol: à escuta na porta 9090.\n");
-        FS_Node node = new FS_Node(ipNode, hostname, socketTCP, pathToFiles, socketUDP);
+        FS_Node node = new FS_Node(hostname, socketTCP, pathToFiles, socketUDP);
         node.listenMessageFromTracker();
         node.sendMessageToTracker();
 
