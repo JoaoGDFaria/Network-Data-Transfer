@@ -1119,8 +1119,6 @@ public class FS_Node {
                             int ack_num = Integer.parseInt(split[0].substring(3));
                             String fName= split[1];
 
-                            //if (fName.charAt(0) == 'i') desconexoes.put(fName.substring(1), LocalTime.now());
-
                             l.lock();
                             try{
                                 fragmentoAtual.put(fName, ack_num+1);
@@ -1286,7 +1284,7 @@ public class FS_Node {
                 }
             };
 
-            timer2.scheduleAtFixedRate(task, 500, 500);
+            timer2.scheduleAtFixedRate(task, 3000, 500);
         }).start();
     }
 
@@ -1320,14 +1318,14 @@ public class FS_Node {
 
     public static void main (String[] args) throws IOException{
 
+        String pathToFiles="";
         if (args.length > 0) {
-            System.out.print("Path fornecido para download:");
-
             for (int i = 0; i < args.length; i++) {
-                System.out.print(args[i]);
+                pathToFiles+=args[i];
             }
         } else {
-            System.out.println("Nenhum path fornecido para download.");
+            System.out.println("Nenhum path fornecido para download, por favor forneça um path válido.");
+            System.exit(0);
         }
 
         int numeroMaximoDeThreads = 20;
@@ -1341,21 +1339,6 @@ public class FS_Node {
         String ipNode = socketTCP.getLocalAddress().toString().substring(1);
 
         DatagramSocket socketUDP = new DatagramSocket(9090);
-
-        String pathToFiles;
-        if (ipNode.equals("132.50.1.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node1";
-        }
-        else if (ipNode.equals("192.168.2.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node2";
-        }
-        else if (ipNode.equals("192.168.3.20")){
-            pathToFiles = "/home/core/Desktop/Projeto/Node3";
-        }
-        else{
-            pathToFiles = "/home/core/Desktop/Projeto/Node4";
-        }
-
 
         System.out.println("Conexão FS Track Protocol com servidor " + socketTCP.getInetAddress().getHostAddress() + " porta 9090.");
         System.out.println("FS Transfer Protocol: à escuta na porta 9090.\n");
