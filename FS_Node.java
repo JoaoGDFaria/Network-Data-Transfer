@@ -62,7 +62,7 @@ public class FS_Node {
         if (msg != ""){
             sendInfoToFS_Tracker(msg);
         }
-        System.out.println("Ready to interact with network...");
+        System.out.println("Ready to interact with network...\n\n");
     }
 
 
@@ -483,7 +483,7 @@ public class FS_Node {
                     e.printStackTrace();
                 }
             }
-            System.out.println("RTT time de "+ip +":  "+ rttTimes.get(ip));
+            System.out.println("RTT time de "+ip +":  "+ rttTimes.get(ip) + "ms");
         }
         System.out.println("-----------------\n");
     }
@@ -1140,7 +1140,7 @@ public class FS_Node {
                                 if (rtt < 2) rtt=2;
                                 if(!rttTimes.containsKey(ip)){
                                     rttTimes.put(ip, rtt);  
-                                    System.out.println("RTT calculated ---- "+ip+" -->"+rttTimes.get(ip)); 
+                                    //System.out.println("RTT calculated ---- "+ip+" -->"+rttTimes.get(ip)); 
                                 } 
                             }
                             finally{
