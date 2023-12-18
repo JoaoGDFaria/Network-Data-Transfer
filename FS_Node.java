@@ -329,6 +329,7 @@ public class FS_Node {
                 ipAdress += payload.charAt(i);
             }
         }
+        
         sendToNodes(blocksToRetreive);
     }
 
@@ -548,6 +549,7 @@ public class FS_Node {
         }
 
         if (ipEBlocos.isEmpty()) System.out.println("You already have that file!");
+
         for (Map.Entry<String, String> entry : ipEBlocos.entrySet()) {
             new Thread(() -> {
                 String ipParaPedirBlocos = entry.getKey();
@@ -611,7 +613,6 @@ public class FS_Node {
         int cont = 0;
         int index = 0;
         String fileBlockName = "i"+ipNode+payload.substring(0,payload.indexOf(","));
-
         l.lock();
         try{
             fragmentoAtual.remove(fileBlockName);    
@@ -669,7 +670,6 @@ public class FS_Node {
                     Thread.sleep(rtt);
                     // System.out.println(rtt); // NEEDED FOR DEBBUG
                 } catch (InterruptedException e) {
-                    System.out.println("A EXCEPTION é aquiiiiiiiiiiii");
                     e.printStackTrace();
                 }
 
@@ -784,7 +784,7 @@ public class FS_Node {
                 }
                 byte[] eachMessage = new byte[1024];
                 if (isLastFragment){
-                    System.out.println("ACABOU\n\n");
+                    System.out.println("Acabou envio para "+ipToSend+"\n\n");
                     eachMessage[0] = (byte) (1);
                 }
                 else{
@@ -893,7 +893,7 @@ public class FS_Node {
                         msg+=mensagem;
                         separateEachFile("0|"+ipToSendACK+"|"+name+"|"+msg);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendACK);
-                        System.out.println("ACK"+(n_seq_esperado)+"|"+nameFile); // DELETE AFTER
+                        //System.out.println("ACK"+(n_seq_esperado)+"|"+nameFile); // DELETE AFTER
                     }
                     finally{
                         l.unlock();
@@ -909,7 +909,7 @@ public class FS_Node {
                         msg+=mensagem;
                         fullMessages.put(nameFile, msg);
                         sendMessageToNode("ACK"+n_seq_esperado+"|"+nameFile, ipToSendACK);
-                        System.out.println("ACK"+(n_seq_esperado)+"|"+nameFile); // DELETE AFTER
+                        //System.out.println("ACK"+(n_seq_esperado)+"|"+nameFile); // DELETE AFTER
                     }
                     finally{
                         l.unlock();
@@ -935,7 +935,7 @@ public class FS_Node {
             try{
                 try{
                     sendMessageToNode("ACK"+(n_seq_esperado-1)+"|"+nameFile, ipToSendACK);
-                    System.out.println("ACK"+(n_seq_esperado-1)+"|"+nameFile); // DELETE AFTER
+                    //System.out.println("ACK"+(n_seq_esperado)+"|"+nameFile); // DELETE AFTER
                 } catch (IOException e){ }
             }
             finally{
@@ -1083,13 +1083,13 @@ public class FS_Node {
 
                         // Primeira mensagem
                         if (responsenFromNode.startsWith("0|")){
-                            System.out.println("Received: " + responsenFromNode.substring(0,30)); // NEEDED FOR DEBBUG
+                            //System.out.println("Received: " + responsenFromNode.substring(0,30)); // DELETE AFTER
                             separateEachFile(responsenFromNode);
                         }
 
                         // Mensagem fragmentada
                         else if (responsenFromNode.startsWith("1|") || responsenFromNode.startsWith("2|")){
-                            System.out.println("Received: " + responsenFromNode.substring(0,30)); // NEEDED FOR DEBBUG
+                            //System.out.println("Received: " + responsenFromNode.substring(0,30)); // DELETE AFTER
                             getFragmentedUDP(responsenFromNode);
                         }
 
@@ -1118,6 +1118,8 @@ public class FS_Node {
                             String[] split = responsenFromNode.split("\\|");
                             int ack_num = Integer.parseInt(split[0].substring(3));
                             String fName= split[1];
+
+                            //if (fName.charAt(0) == 'i') desconexoes.put(fName.substring(1), LocalTime.now());
 
                             l.lock();
                             try{
@@ -1317,6 +1319,12 @@ public class FS_Node {
 
 
     public static void main (String[] args) throws IOException{
+
+        int numeroMaximoDeThreads = 20;
+        // Configurar o número máximo de threads em paralelo
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(numeroMaximoDeThreads));
+
+
         InetAddress address = InetAddress.getByName("fstracker.cc.com");
         String trackerIP = address.getHostAddress();
         Socket socketTCP = new Socket(trackerIP, 9090); //"localhost"
