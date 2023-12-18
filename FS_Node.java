@@ -1284,7 +1284,7 @@ public class FS_Node {
                 }
             };
 
-            timer2.scheduleAtFixedRate(task, 3000, 500);
+            timer2.scheduleAtFixedRate(task, 500, 500);
         }).start();
     }
 
